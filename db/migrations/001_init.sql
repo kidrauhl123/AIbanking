@@ -190,3 +190,8 @@ CREATE INDEX IF NOT EXISTS idx_bank_transactions_account_time ON bank_transactio
 CREATE INDEX IF NOT EXISTS idx_audit_events_created ON audit_events(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_transfers_customer_prepared ON transfers(customer_id, prepared_at DESC);
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO schema_migrations (version) VALUES ('001_init.sql') ON CONFLICT DO NOTHING;

@@ -9,9 +9,10 @@ type Node = { key: string; tool: string; status: string; dependencies: string[];
 type Task = { id: string; user_utterance: string; intent: string; status: string; risk_level: "GREEN" | "YELLOW" | "RED"; plan: unknown[]; created_at: string; nodes: Node[] };
 type Event = { id: string; task_id?: string; operation_id?: string; event_type: string; actor_type: string; event_summary: string; evidence: Record<string, unknown>; created_at: string };
 type Policy = { id: string; task_id: string; operation_id: string; base_level: string; final_level: string; matched_rules: string[]; evidence: Record<string, unknown>; created_at: string };
+type McpInvocation = { id: string; tool_name: string; outcome: string; operation_id?: string; input_summary: Record<string, unknown>; created_at: string };
 
 export function AuditConsole() {
-  const [data, setData] = useState<{ tasks: Task[]; events: Event[]; policies: Policy[] } | null>(null);
+  const [data, setData] = useState<{ tasks: Task[]; events: Event[]; policies: Policy[]; mcpInvocations: McpInvocation[] } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState("");
   const load = () => fetch("/api/audit", { cache: "no-store" }).then((response) => { if (!response.ok) throw new Error(); return response.json(); }).then((value) => { setData(value); setSelected((current) => current ?? value.tasks[0]?.id ?? null); setError(""); }).catch(() => setError("无法读取审计数据库"));
@@ -34,7 +35,7 @@ export function AuditConsole() {
           {policy && <section className={styles.policy}><div className={styles.subhead}><ShieldCheck size={17} /><b>权限策略裁决</b></div><div className={styles.policyRoute}><span data-level={policy.base_level}>{policy.base_level}</span><i /><span data-level={policy.final_level}>{policy.final_level}</span><strong>{policy.final_level === "RED" ? "MFA 强验证" : "用户明确确认"}</strong></div><ul>{policy.matched_rules.map((rule) => <li key={rule}><Check size={13} />{rule}</li>)}</ul></section>}
           <div className={styles.subhead}><CircleAlert size={17} /><b>不可变事件流</b><span>{events.length} 条</span></div>
           <div className={styles.timeline}>{events.map((event) => <article key={event.id}><time>{new Date(event.created_at).toLocaleTimeString("zh-CN")}</time><i /><div><b>{event.event_summary}</b><span>{event.actor_type} · {event.event_type}</span>{event.operation_id && <code>{event.operation_id}</code>}</div></article>)}</div>
-        </> : <div className={styles.empty}>在左侧选择一个任务</div>}
+        </> : <><div className={styles.detailHead}><div><span className={styles.badge} data-level="GREEN">CORE</span><h2>账户安全事件</h2><p>没有 Agent 任务时，仍展示银行核心与身份事件。</p></div></div><div className={styles.subhead}><CircleAlert size={17} /><b>事件流</b><span>{data?.events.length ?? 0} 条</span></div><div className={styles.timeline}>{data?.events.map((event) => <article key={event.id}><time>{new Date(event.created_at).toLocaleTimeString("zh-CN")}</time><i /><div><b>{event.event_summary}</b><span>{event.actor_type} · {event.event_type}</span>{event.operation_id && <code>{event.operation_id}</code>}</div></article>)}</div>{Boolean(data?.mcpInvocations.length) && <><div className={styles.subhead}><GitBranch size={17} /><b>MCP 调用</b><span>{data?.mcpInvocations.length} 条</span></div><div className={styles.dag}>{data?.mcpInvocations.map((call) => <div className={styles.node} key={call.id}><div className={styles.nodeIndex}>M</div><div><b>{call.tool_name}</b><code>{call.operation_id ?? call.outcome}</code></div><span>{new Date(call.created_at).toLocaleTimeString("zh-CN")}</span><Check size={16} /></div>)}</div></>}</>}
       </section>
     </div>
   </main>;

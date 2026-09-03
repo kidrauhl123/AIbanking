@@ -11,6 +11,26 @@
 .viewport::-webkit-scrollbar { display: none; }
 .connectionError { margin: 0 18px 8px; padding: 10px 12px; font-size: 11px; background: #fff1f0; border: 1px solid #f3cac6; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 10px; color: #8c2929; }
 .connectionError button { border: 0; background: none; display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 700; color: inherit; }
+.splash { display: grid; justify-items: center; gap: 14px; color: var(--muted); font-size: 12px; }
+.splash span { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: var(--ink); color: white; font-size: 22px; font-weight: 800; }
+
+.authStage { min-height: 100dvh; display: grid; place-items: center; padding: 28px 18px; background: #f7f8fa; }
+.authPanel { width: min(100%, 430px); background: white; border: 1px solid #e1e3e8; border-radius: 30px; padding: 30px; box-shadow: 0 24px 70px rgba(17,19,24,.08); }
+.authBrand { display: flex; align-items: center; gap: 9px; font-size: 15px; }
+.authBrand span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; color: white; background: var(--ink); font-weight: 800; }
+.authCopy { margin: 48px 0 28px; }
+.authCopy p { color: var(--accent); font: 700 9px ui-monospace, monospace; letter-spacing: .13em; }
+.authCopy h1 { margin: 8px 0 9px; font-size: 34px; letter-spacing: -.055em; }
+.authCopy span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.authForm, .actionForm { display: flex; flex-direction: column; gap: 15px; }
+.authForm label, .actionForm label, .reauthField { display: flex; flex-direction: column; gap: 7px; color: #555b67; font-size: 10px; font-weight: 650; }
+.authForm input, .actionForm input, .actionForm select, .reauthField input { width: 100%; height: 46px; border: 1px solid #dfe1e6; border-radius: 11px; background: #fafbfc; padding: 0 13px; outline: 0; color: var(--ink); font-size: 12px; }
+.authForm input:focus, .actionForm input:focus, .actionForm select:focus, .reauthField input:focus { border-color: var(--accent); background: white; box-shadow: 0 0 0 3px rgba(91,95,244,.1); }
+.authSubmit { height: 48px; border: 0; border-radius: 12px; background: var(--ink); color: white; font-size: 12px; font-weight: 700; cursor: pointer; }
+.authSubmit:disabled { opacity: .55; }
+.modeSwitch { width: 100%; margin-top: 17px; border: 0; background: none; color: var(--accent); font-size: 11px; cursor: pointer; }
+.authLegal { display: block; margin-top: 34px; padding-top: 17px; border-top: 1px solid var(--line); color: #8a8d95; font-size: 9px; line-height: 1.55; }
+.formError { padding: 10px 11px; border-radius: 9px; background: #fff0ef; color: #a92f2f; font-size: 10px; line-height: 1.45; }
 
 .home { padding: 12px 18px 38px; }
 .balanceBlock { padding: 19px 4px 20px; }
@@ -33,6 +53,7 @@
 .sectionHead p, .viewHeading p { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
 .sectionHead h2 { font-size: 25px; letter-spacing: -.045em; }
 .sectionHead button { border: 0; background: #f1f1ef; border-radius: 18px; padding: 7px 10px; font-size: 10px; font-weight: 650; cursor: pointer; }
+.emptyCopy { margin-top: 14px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .meter { margin: 17px 0 7px; height: 7px; border-radius: 6px; background: #ecece9; overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--ink); border-radius: inherit; }
 .meterLabels { display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; }
@@ -49,6 +70,8 @@
 .txCopy small { font-size: 9px; color: var(--muted); }
 .txCopy em { font-style: normal; margin-left: 5px; color: var(--danger); }
 .transaction > strong { font-size: 11px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.emptyState { padding: 19px 4px 9px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; color: var(--muted); }
+.emptyState span { color: var(--ink); font-size: 12px; font-weight: 650; }.emptyState small { font-size: 9px; line-height: 1.5; }
 
 .agentView { min-height: 100%; padding: 9px 16px 26px; }
 .agentHeading { display: flex; align-items: center; gap: 11px; margin: 5px 3px 14px; }
@@ -133,10 +156,14 @@
 .bankCard small { font: 8px ui-monospace, monospace; letter-spacing: .14em; opacity: .65; }
 .bankCard > strong { margin-top: 36px; font-size: 13px; }.bankCard > p { font: 21px ui-monospace, monospace; letter-spacing: .08em; margin-top: 6px; }
 .bankCard footer { display: flex; justify-content: space-between; margin-top: auto; font-size: 9px; color: #a8a8ac; }
+.cardLock { align-self: flex-end; margin-top: 13px; padding: 6px 10px; border: 1px solid rgba(255,255,255,.24); border-radius: 12px; background: transparent; color: inherit; font-size: 9px; cursor: pointer; }
 .bankCardLight { background: #e8e8e4; color: var(--ink); box-shadow: none; border: 1px solid #d8d8d4; }
 .bankCardLight > div span { background: var(--ink); color: white; }.bankCardLight footer { color: #6f6f73; }
 .outlineAction { width: 100%; height: 49px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; background: white; display: flex; gap: 9px; align-items: center; font-size: 11px; font-weight: 650; cursor: pointer; }
 .outlineAction svg:last-child { margin-left: auto; color: var(--muted); }
+.largeEmpty { min-height: 170px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 7px; margin-bottom: 14px; border: 1px dashed #d7d9dd; border-radius: 20px; color: var(--muted); text-align: center; }
+.largeEmpty b { color: var(--ink); font-size: 13px; }.largeEmpty span { width: 230px; font-size: 10px; line-height: 1.5; }
+.textAction { width: 100%; margin-top: 12px; border: 0; background: none; color: var(--accent); font-size: 10px; cursor: pointer; }
 
 .auditLink { position: absolute; bottom: 23px; display: flex; align-items: center; gap: 6px; color: #636367; font-size: 11px; font-weight: 600; }
 .modalBackdrop { position: fixed; inset: 0; z-index: 20; background: rgba(6,6,7,.48); display: grid; place-items: center; padding: 18px; backdrop-filter: blur(4px); }
@@ -150,12 +177,30 @@
 .codeInput:focus { border-color: var(--ink); }
 .primaryButton { width: 100%; margin: 0; height: 47px; }
 .modal > small { display: block; margin-top: 11px; color: var(--muted); font-size: 8px; line-height: 1.45; text-align: center; }
+.modal > .eyebrow + h2 { margin-bottom: 8px; }
+.actionForm { margin-top: 19px; }
+.actionForm .primaryButton { margin-top: 3px; }
+.transferReceipt { margin: 20px 0 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 0 10px; }
+.transferReceipt > strong { display: block; margin-bottom: 15px; font-size: 34px; letter-spacing: -.055em; }
+.transferReceipt dl div { display: grid; grid-template-columns: 85px 1fr; gap: 10px; padding: 7px 0; font-size: 10px; }
+.transferReceipt dt { color: var(--muted); }.transferReceipt dd { text-align: right; overflow-wrap: anywhere; font-weight: 620; }
+.reauthField { margin-bottom: 13px; }
+.profileRows { margin: 19px 0; border-top: 1px solid var(--line); }
+.profileRows div { display: flex; justify-content: space-between; gap: 15px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 10px; }
+.profileRows span { color: var(--muted); }.profileRows b { overflow-wrap: anywhere; text-align: right; }
+.developerLink { display: grid; grid-template-columns: 25px 1fr 18px; gap: 9px; align-items: center; padding: 13px; border-radius: 12px; background: #f2f3ff; color: var(--accent); }
+.developerLink + .developerLink { margin-top: 8px; }
+.developerLink > span { display: flex; flex-direction: column; gap: 3px; }.developerLink b { font-size: 11px; }.developerLink small { color: #727690; font-size: 8px; }
+.logoutButton { width: 100%; margin-top: 14px; height: 42px; border: 1px solid var(--line); border-radius: 11px; background: white; display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--danger); font-size: 10px; cursor: pointer; }
+.mfaRequired { margin-bottom: 14px; padding: 12px; border-radius: 10px; background: #fff5e5; display: flex; flex-direction: column; gap: 4px; }.mfaRequired b { font-size: 10px; }.mfaRequired span { color: var(--muted); font-size: 9px; line-height: 1.45; }.mfaRequired a { margin-top: 4px; color: var(--accent); font-size: 9px; font-weight: 700; }
 
 @media (max-width: 560px) {
   .stage { display: block; padding: 0; background: white; }
   .phone { width: 100%; height: 100dvh; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
   .topbar { padding-top: max(10px, env(safe-area-inset-top)); height: calc(66px + env(safe-area-inset-top)); flex-basis: calc(66px + env(safe-area-inset-top)); }
   .auditLink { display: none; }
+  .authStage { padding: 0; background: white; align-items: stretch; }
+  .authPanel { width: 100%; min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; padding: max(30px, env(safe-area-inset-top)) 25px 25px; }
 }
 
 @media (prefers-reduced-motion: reduce) { .stage, .stage *, .stage *::before, .stage *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; } }

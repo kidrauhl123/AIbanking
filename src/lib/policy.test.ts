@@ -13,6 +13,17 @@ describe("transfer policy", () => {
     expect(result.requiredAuth).toBe("CONFIRM");
   });
 
+  it("monitors a new recipient without bypassing the stated small-transfer tier", () => {
+    const result = evaluateTransferRisk({
+      amountMinor: 8_800,
+      dailyTotalMinor: 0,
+      trustedBeneficiary: false,
+      trustedDevice: true,
+    });
+    expect(result.finalLevel).toBe("YELLOW");
+    expect(result.matchedRules).toContain("NEW_BENEFICIARY_MONITORED");
+  });
+
   it("uses the cumulative daily amount rather than the single transfer", () => {
     const result = evaluateTransferRisk({
       amountMinor: 20_000,
@@ -28,4 +39,3 @@ describe("transfer policy", () => {
     expect(maxRisk("RED", "GREEN", "YELLOW")).toBe("RED");
   });
 });
-

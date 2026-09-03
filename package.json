@@ -1,6 +1,6 @@
 {
   "name": "bankpilot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,13 +9,13 @@
     "lint": "eslint",
     "test": "vitest run",
     "db:up": "docker-compose up -d --wait postgres",
-    "db:migrate": "docker-compose exec -T postgres psql -U bankpilot -d bankpilot < db/migrations/001_init.sql",
-    "db:seed": "docker-compose exec -T postgres psql -U bankpilot -d bankpilot < db/seed.sql",
+    "db:migrate": "bash scripts/migrate.sh",
     "db:verify": "docker-compose exec -T postgres psql -U bankpilot -d bankpilot < db/invariants.sql",
-    "db:setup": "npm run db:up && npm run db:migrate && npm run db:seed",
+    "db:setup": "npm run db:up && npm run db:migrate",
     "db:down": "docker-compose down"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "lucide-react": "^1.38.0",
     "next": "16.3.3",
     "pg": "^8.23.0",

@@ -1,68 +1,62 @@
-# BankPilot 系统架构
+# 系统架构
 
-## 1. 产品边界
+## 设计原则
 
-BankPilot 是“有银行核心约束的 Agent”，不是让大模型直接操作资金。PWA 是用户触点，Agent Orchestrator 负责理解和规划，Policy Engine 是独立的执行闸门，Bank Core Gateway 只暴露白名单工具，PostgreSQL 模拟账户、卡、订阅、流水和账本。
-
-比赛版本调用真实 OpenAI-compatible 大模型完成多轮上下文理解、结构化实体抽取和任务规划。模型输出必须通过 Zod Schema、允许意图与允许步骤枚举、实体解析、权限策略和工具参数白名单，不能直接生成 SQL 或调用任意 URL。系统没有规则式意图识别回退；模型未配置、超时或输出不合规时拒绝执行。
-
-## 2. 分层设计
-
-| 层 | 职责 | 不允许做的事 |
-|---|---|---|
-| PWA / IM Adapter | 展示、语音/文本输入、收集确认或 MFA | 自行判定权限、缓存完整敏感数据 |
-| Agent Orchestrator | 意图、上下文、槽位、DAG、回复 | 直接修改账户余额 |
-| Policy Engine | 根据动作、累计金额、收款人、设备、失败次数裁决 | 接受 Prompt 覆盖规则 |
-| Authorization | 交易详情确认、OTP/人脸/U 盾适配 | 使用未绑定具体交易的通用授权 |
-| Bank Core Gateway | 执行白名单确定性工具、幂等、事务 | 运行模型生成代码 |
-| Ledger / Business DB | 业务真相、约束、锁、双分录 | 接受前端直连 |
-| Audit Plane | 记录决策、工具、授权和结果 | 被业务 Agent 修改历史记录 |
-
-## 3. 任务 DAG
-
-转账例子：
+BankPilot 将“会聊天的模型”和“能改变资金状态的银行核心”严格分开。LLM 只能提出结构化意图与计划；确定性的策略引擎决定风险；只有银行核心能在数据库事务中执行操作。
 
 ```text
-parse_transfer
-  └─ resolve_beneficiary
-       └─ check_balance
-            └─ policy_check
-                 └─ await_authorization
-                      └─ post_ledger
+PWA / 第三方 Agent
+        │
+        ├── APP Session ── Embedded Agent Orchestrator ─┐
+        │                                               │
+        └── Scoped Bearer ── MCP / REST Adapter ────────┤
+                                                        ▼
+                    Policy + Authorization Gateway
+                         │               │
+                    TOTP / Confirm       │ Audit events
+                         ▼               ▼
+                  Bank Core Service ─ PostgreSQL
+                         │          accounts / cards / operations
+                         └────────── double-entry ledger
 ```
 
-每个节点记录工具名、依赖、输入摘要、输出摘要、开始/结束时间与状态。生产版本可将执行器替换为 Temporal、Camunda 或银行现有工作流平台，以获得暂停、重试、补偿和人工接管能力。
+## 关键组件
 
-## 4. 转账状态机
+### PWA
 
-```mermaid
-stateDiagram-v2
-  [*] --> PREPARED
-  PREPARED --> AWAITING_AUTH
-  AWAITING_AUTH --> EXECUTING: 确认或 MFA 成功
-  AWAITING_AUTH --> FAILED: 验证熔断/过期
-  AWAITING_AUTH --> CANCELLED: 用户取消
-  EXECUTING --> SUCCEEDED: 双分录提交
-  EXECUTING --> FAILED: 余额不足/核心错误
-  SUCCEEDED --> SUCCEEDED: 相同操作幂等重试
-```
+Next.js App Router + React。支持注册、登录、账户、流水、入金、转账、卡片、安全中心、开发者中心和 Agent 对话。所有写请求使用 HttpOnly SameSite Cookie，并校验 Origin。
 
-执行事务会锁定转账和相关账户，检查操作状态、认证、账户状态与余额；随后同时写入账本头、借方分录、贷方分录、用户流水和余额，最后更新转账状态。任一步失败全部回滚。
+### Embedded Agent Orchestrator
 
-## 5. 数据一致性
+采用两次受约束的模型调用：第一次输出通过 Zod 校验的意图、实体和步骤；银行工具返回事实后，第二次只能根据 `BANK_FACTS` 生成说明。模型不能生成 SQL、调用任意 URL 或直接提交账本。
 
-- 金额存为 `BIGINT` 分，避免浮点误差；
-- `operation_id` 和 `idempotency_key` 唯一；
-- 账户行使用 `FOR UPDATE`，按 ID 排序降低死锁概率；
-- 账本一借一贷，分录符号由 CHECK 约束保护；
-- 余额不得小于 0；
-- 操作凭证只在 Bank Core 返回 `SUCCEEDED` 后显示“已入账”；
-- 任何超时或异常都回复“未确认”，绝不由 Agent 推测成功。
+### MCP / REST Adapter
 
-## 6. 扩展路线
+MCP 使用官方 TypeScript SDK 的 Streamable HTTP transport。每次请求按令牌 scope 动态注册工具。REST 与 MCP 都调用同一个 `bank-core.ts`，不复制业务规则。
 
-1. 建立对抗注入、模糊表达、上下文指代和事实一致性的模型评测集；
-2. 将单体 Bank Core Gateway 替换为银行 API/MCP 适配器；
-3. 增加理财适当性、定时转账、AA 收款和跨场景日程 DAG；
-4. 引入设备指纹、实时反欺诈评分、动态限额和人工坐席；
-5. 将审计事件写入 WORM 存储或日志平台并做告警关联。
+### Policy + Authorization
+
+- GREEN：余额、流水、账单分析、卡片/订阅/理财查询，可自动执行。
+- YELLOW：小额转账、虚拟卡申请、锁卡，先展示完整单据并获得明确确认。
+- RED：日累计转账超过 ¥1,000 或设备/行为风险规则升级，要求 TOTP 动态码。
+
+模型提供的风险等级不被信任。策略裁决写入 `policy_decisions`，授权凭证绑定操作编号且 10 分钟过期。
+
+### Bank Core 与 PostgreSQL
+
+金额统一使用人民币分的整数。转账在单一数据库事务中锁定付款与收款账户，检查余额，写入一条账本交易和金额和为零的借贷分录，再同步账户快照和用户流水。失败则整体回滚。
+
+关键数据域：
+
+- 身份：`customers`、`auth_credentials`、`user_sessions`、`mfa_totp`
+- 银行业务：`accounts`、`beneficiaries`、`transfers`、`cards`、`subscriptions`
+- 账本：`ledger_transactions`、`ledger_entries`、`bank_transactions`
+- Agent：`agent_tasks`、`task_nodes`、`policy_decisions`
+- 外部接入：`api_clients`、`api_tokens`、`mcp_invocations`
+- 审计：`audit_events`
+
+## 数据真实性边界
+
+这里的“真实”指系统不种入虚构业务记录：客户由本人注册，余额由本人声明入金或系统内转账产生，卡片由本人申请。它仍是比赛沙箱，不连接央行清算、银联或真实商业银行核心，因此不能承载真实货币。
+
+理财产品没有可靠来源就保持空表。未来可增加经过许可的数据采集任务，并强制保存 `source_url`、发布时间、核验时间和原始事实。

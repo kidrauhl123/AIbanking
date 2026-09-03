@@ -1,8 +1,8 @@
 import type { PoolClient } from "pg";
-import { DEMO_CUSTOMER_ID } from "./constants";
 import { query } from "./db";
 
 type AuditInput = {
+  customerId: string;
   eventType: string;
   actorType: "USER" | "AGENT" | "POLICY_ENGINE" | "BANK_CORE" | "RISK_ENGINE" | "SYSTEM";
   summary: string;
@@ -17,7 +17,7 @@ export async function writeAudit(input: AuditInput, client?: PoolClient) {
       (customer_id, task_id, operation_id, event_type, actor_type, event_summary, evidence)
      VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb)`;
   const values = [
-    DEMO_CUSTOMER_ID,
+    input.customerId,
     input.taskId ?? null,
     input.operationId ?? null,
     input.eventType,

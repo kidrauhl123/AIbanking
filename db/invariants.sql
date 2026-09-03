@@ -10,8 +10,8 @@ BEGIN
     RAISE EXCEPTION 'Ledger invariant failed: unbalanced transaction';
   END IF;
 
-  IF EXISTS (SELECT 1 FROM accounts WHERE available_balance_minor < 0) THEN
-    RAISE EXCEPTION 'Account invariant failed: negative balance';
+  IF EXISTS (SELECT 1 FROM accounts WHERE customer_id IS NOT NULL AND available_balance_minor < 0) THEN
+    RAISE EXCEPTION 'Customer account invariant failed: negative balance';
   END IF;
 
   IF EXISTS (
@@ -19,6 +19,20 @@ BEGIN
     GROUP BY operation_id HAVING count(*) > 1
   ) THEN
     RAISE EXCEPTION 'Idempotency invariant failed: duplicate operation id';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM customers c
+    LEFT JOIN auth_credentials a ON a.customer_id=c.id
+    WHERE a.customer_id IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Identity invariant failed: customer without credentials';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM accounts WHERE customer_id IS NULL AND system_code IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Account invariant failed: ownerless non-system account';
   END IF;
 END $$;
 

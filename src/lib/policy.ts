@@ -25,8 +25,7 @@ export function evaluateTransferRisk(input: TransferRiskInput) {
     matchedRules.push("DAILY_TRANSFER_TOTAL_OVER_1000_CNY");
   }
   if (!input.trustedBeneficiary) {
-    levels.push("RED");
-    matchedRules.push("NEW_OR_UNTRUSTED_BENEFICIARY");
+    matchedRules.push("NEW_BENEFICIARY_MONITORED");
   }
   if (input.trustedDevice === false) {
     levels.push("RED");
