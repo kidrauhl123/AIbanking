@@ -1,0 +1,5 @@
+export const DEMO_CUSTOMER_ID =
+  process.env.DEMO_CUSTOMER_ID ?? "11111111-1111-4111-8111-111111111111";
+
+export const DEMO_MFA_CODE = "123456";
+

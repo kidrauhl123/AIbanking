@@ -1,0 +1,19 @@
+:root {
+  --ink: #0b0b0c;
+  --muted: #707074;
+  --line: #e7e7e4;
+  --paper: #f2f2ef;
+  --white: #ffffff;
+  --accent: #5b5ff4;
+  --positive: #0c906b;
+  --warning: #c48210;
+  --danger: #d44444;
+}
+
+* { box-sizing: border-box; padding: 0; margin: 0; }
+html { min-height: 100%; background: var(--paper); }
+body { min-height: 100%; color: var(--ink); background: var(--paper); font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; }
+a { color: inherit; text-decoration: none; }
+::selection { background: #dadaff; }
