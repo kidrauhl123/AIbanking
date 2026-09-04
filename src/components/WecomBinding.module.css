@@ -1,0 +1,175 @@
+.stage {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 28px 18px;
+  background: var(--paper);
+}
+
+.panel {
+  width: min(100%, 430px);
+  min-height: 650px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid #deded9;
+  border-radius: 30px;
+  box-shadow: 0 24px 70px rgba(11, 11, 12, .09);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 720;
+}
+
+.brand > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--white);
+  background: var(--ink);
+  font-weight: 800;
+}
+
+.identityBridge {
+  display: grid;
+  grid-template-columns: 78px 1fr 78px;
+  align-items: center;
+  gap: 8px;
+  margin: 76px 0 52px;
+}
+
+.identity {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+}
+
+.identity > span {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #e9f7ee;
+  color: #148548;
+  font-size: 18px;
+  font-weight: 780;
+}
+
+.identity > .bankMark {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.identity small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.bridge {
+  display: grid;
+  grid-template-columns: 1fr 28px 1fr;
+  align-items: center;
+  color: var(--accent);
+}
+
+.bridge i {
+  height: 1px;
+  background: #c9caf8;
+}
+
+.bridge svg {
+  justify-self: center;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font: 700 9px ui-monospace, monospace;
+  letter-spacing: .13em;
+}
+
+.panel h1 {
+  margin: 8px 0 10px;
+  font-size: 34px;
+  line-height: 1.08;
+  letter-spacing: -.055em;
+}
+
+.explanation {
+  min-height: 42px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.securityLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 25px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: #5e5e62;
+  font-size: 9px;
+}
+
+.primary,
+.secondary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary:disabled { opacity: .58; }
+.secondary { color: var(--ink); background: #efefec; }
+.success {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: #e7f6f0;
+  color: var(--positive);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.panel footer {
+  margin-top: auto;
+  padding-top: 26px;
+  color: #949498;
+  font-size: 9px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 560px) {
+  .stage { padding: 0; background: var(--white); }
+  .panel { min-height: 100dvh; border: 0; border-radius: 0; box-shadow: none; padding: max(30px, env(safe-area-inset-top)) 25px 25px; }
+  .identityBridge { margin-top: 70px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation-duration: .01ms; }
+}

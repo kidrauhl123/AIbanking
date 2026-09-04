@@ -5,19 +5,15 @@
 BankPilot 将“会聊天的模型”和“能改变资金状态的银行核心”严格分开。LLM 只能提出结构化意图与计划；确定性的策略引擎决定风险；只有银行核心能在数据库事务中执行操作。
 
 ```text
-PWA / 第三方 Agent
-        │
-        ├── APP Session ── Embedded Agent Orchestrator ─┐
-        │                                               │
-        └── Scoped Bearer ── MCP / REST Adapter ────────┤
-                                                        ▼
-                    Policy + Authorization Gateway
-                         │               │
-                    TOTP / Confirm       │ Audit events
-                         ▼               ▼
-                  Bank Core Service ─ PostgreSQL
-                         │          accounts / cards / operations
-                         └────────── double-entry ledger
+PWA ─ Session ───────┐
+企业微信 ─ WS Worker ├─ LangGraph Runtime ── intent nodes ── interrupt()
+                     │         │                         │
+外部 Agent ─ MCP ────┘         │ checkpoints             │ resume
+                               ▼                         ▼
+                         PostgreSQL ◀──── Policy + Authorization Gateway
+                               ▲                  │ confirm / TOTP
+                               │                  ▼
+                               └──────────── Bank Core ─ double-entry ledger
 ```
 
 ## 关键组件
@@ -26,9 +22,17 @@ PWA / 第三方 Agent
 
 Next.js App Router + React。支持注册、登录、账户、流水、入金、转账、卡片、安全中心、开发者中心和 Agent 对话。所有写请求使用 HttpOnly SameSite Cookie，并校验 Origin。
 
-### Embedded Agent Orchestrator
+### LangGraph Agent Runtime
 
-采用两次受约束的模型调用：第一次输出通过 Zod 校验的意图、实体和步骤；银行工具返回事实后，第二次只能根据 `BANK_FACTS` 生成说明。模型不能生成 SQL、调用任意 URL 或直接提交账本。
+每个请求创建独立的 LangGraph run，并把 checkpoint 写入 PostgreSQL。规划节点调用真实模型，随后路由到余额、账单、订阅、转账或卡片节点。只读任务直接结束；写任务在 `authorization_gate` 调用 `interrupt()`，持久化后等待用户确认。授权完成后用同一 `graph_thread_id` 恢复，并从 Bank Core 重读最终状态，再生成回复。
+
+模型采用两次受约束调用：第一次输出通过 Zod 校验的意图、实体和步骤；银行工具返回事实后，第二次只能根据 `BANK_FACTS` 生成说明。模型不能生成 SQL、调用任意 URL 或直接提交账本。重复授权由 runtime 原子抢占，只有一个请求能从 `INTERRUPTED` 进入 `RUNNING`。
+
+### 企业微信 Channel Adapter
+
+独立 Node.js Worker 使用企业微信官方智能机器人 SDK 建立 WebSocket 长连接。Worker 不接触数据库，只使用内部适配令牌调用渠道 API；Bot Secret 也不会进入 Next.js 或浏览器。首次会话发放 10 分钟一次性绑定链接，微信 userid 加密保存并以 HMAC 摘要索引。
+
+绿色任务直接回复；黄色任务使用模板卡片确认；红色任务只发送银行 APP 深链，由银行会话和 TOTP 完成。消息按企业微信 `msgid` 去重，异步结果经事务 outbox 重试投递。
 
 ### MCP / REST Adapter
 
@@ -52,6 +56,8 @@ MCP 使用官方 TypeScript SDK 的 Streamable HTTP transport。每次请求按�
 - 银行业务：`accounts`、`beneficiaries`、`transfers`、`cards`、`subscriptions`
 - 账本：`ledger_transactions`、`ledger_entries`、`bank_transactions`
 - Agent：`agent_tasks`、`task_nodes`、`policy_decisions`
+- Agent Runtime：`agent_threads`、`agent_runtime_runs`、`langgraph.*`
+- 渠道：`channel_identities`、`channel_binding_tokens`、`channel_events`、`channel_outbox`
 - 外部接入：`api_clients`、`api_tokens`、`mcp_invocations`
 - 审计：`audit_events`
 

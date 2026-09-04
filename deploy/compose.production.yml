@@ -17,6 +17,7 @@ services:
       - bankpilot_postgres:/var/lib/postgresql/data
       - ../db/migrations/001_init.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
       - ../db/migrations/002_identity_and_platform.sql:/docker-entrypoint-initdb.d/20-platform.sql:ro
+      - ../db/migrations/003_agent_runtime_and_channels.sql:/docker-entrypoint-initdb.d/30-agent-runtime.sql:ro
     networks:
       - internal
     mem_limit: 512m
@@ -43,6 +44,8 @@ services:
       AI_API_KEY: ${AI_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-}
       AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-30000}
+      BANKPILOT_PUBLIC_URL: ${BANKPILOT_PUBLIC_URL}
+      WECOM_ADAPTER_TOKEN: ${WECOM_ADAPTER_TOKEN:-}
       NODE_ENV: production
     depends_on:
       postgres:
@@ -60,6 +63,27 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+
+  wecom:
+    profiles: ["wecom"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.wecom
+    image: bankpilot-wecom:latest
+    container_name: bankpilot-wecom
+    restart: unless-stopped
+    environment:
+      BANKPILOT_INTERNAL_URL: http://app:3000
+      WECOM_ADAPTER_TOKEN: ${WECOM_ADAPTER_TOKEN}
+      WECOM_BOT_ID: ${WECOM_BOT_ID}
+      WECOM_BOT_SECRET: ${WECOM_BOT_SECRET}
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - internal
+    mem_limit: 256m
+    cpus: 0.5
 
 volumes:
   bankpilot_postgres:

@@ -24,6 +24,16 @@ export function apiError(error: unknown, fallback = "REQUEST_FAILED") {
     AI_INVALID_JSON: 502,
     AI_SCHEMA_REJECTED: 502,
     AI_TIMEOUT: 504,
+    AGENT_RUN_NOT_FOUND: 404,
+    AGENT_RUN_NOT_RESUMABLE: 409,
+    AUTHORIZATION_MISMATCH: 409,
+    OPERATION_TYPE_NOT_SUPPORTED: 422,
+    RESOURCE_REQUIRED: 422,
+    BINDING_TOKEN_INVALID: 400,
+    CHANNEL_ALREADY_BOUND: 409,
+    CHANNEL_IDENTITY_NOT_FOUND: 404,
+    OUTBOX_ITEM_NOT_FOUND: 404,
+    PUBLIC_URL_NOT_CONFIGURED: 503,
   };
   console.error(error);
   return NextResponse.json({ error: code, message: publicMessage(code) }, { status: knownStatus[code] ?? 500 });
@@ -75,6 +85,16 @@ function publicMessage(code: string) {
     AI_INVALID_JSON: "AI 输出未通过结构校验，本次没有执行银行操作",
     AI_SCHEMA_REJECTED: "AI 输出未通过结构校验，本次没有执行银行操作",
     AI_TIMEOUT: "AI 响应超时，本次没有执行银行操作",
+    AGENT_RUN_NOT_FOUND: "没有找到对应的 Agent 任务",
+    AGENT_RUN_NOT_RESUMABLE: "该 Agent 任务当前不能重复授权",
+    AUTHORIZATION_MISMATCH: "授权信息与待执行操作不一致",
+    OPERATION_TYPE_NOT_SUPPORTED: "该操作暂不支持通过此渠道执行",
+    RESOURCE_REQUIRED: "操作信息不完整，请重新发起",
+    BINDING_TOKEN_INVALID: "绑定链接无效、已使用或已过期",
+    CHANNEL_ALREADY_BOUND: "该企业微信身份已绑定其他账户",
+    CHANNEL_IDENTITY_NOT_FOUND: "企业微信身份尚未绑定或已解绑",
+    OUTBOX_ITEM_NOT_FOUND: "消息投递任务不存在或已处理",
+    PUBLIC_URL_NOT_CONFIGURED: "服务器尚未配置可信公网地址",
   };
   return messages[code] ?? "请求没有完成，请稍后重试";
 }

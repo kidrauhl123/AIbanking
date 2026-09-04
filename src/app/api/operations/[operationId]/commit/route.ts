@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { AuthError, authenticateRequest } from "@/lib/auth";
-import { commitTransfer } from "@/lib/bank-core";
-import { withTransaction } from "@/lib/db";
+import { commitPreparedCardLock, commitTransfer } from "@/lib/bank-core";
 import { writeAudit } from "@/lib/audit";
+import { resumeAgentRuntime } from "@/lib/agent-runtime";
 import { apiError, assertSameOrigin } from "@/lib/http";
 
 const schema = z.object({
@@ -14,27 +14,6 @@ const schema = z.object({
   type: z.enum(["TRANSFER", "CARD_LOCK", "SUBSCRIPTION_CANCEL"]),
 });
 
-async function commitCardLock(customerId: string, operationId: string, input: z.infer<typeof schema>) {
-  if (!input.resourceId || !input.taskId) throw new Error("RESOURCE_REQUIRED");
-  return withTransaction(async (client) => {
-    const decision = await client.query<{ evidence: { cardId?: string }; task_id: string }>(
-      `SELECT p.evidence,p.task_id FROM policy_decisions p JOIN agent_tasks t ON t.id=p.task_id
-       WHERE p.operation_id=$1 AND p.final_level='YELLOW' AND t.customer_id=$2 FOR UPDATE OF p`,
-      [operationId, customerId],
-    );
-    if (!decision.rowCount || decision.rows[0].evidence.cardId !== input.resourceId || decision.rows[0].task_id !== input.taskId) throw new Error("AUTHORIZATION_MISMATCH");
-    const card = await client.query<{ status: string; card_name: string; masked_no: string }>(
-      "SELECT status,card_name,masked_no FROM cards WHERE id=$1 AND customer_id=$2 FOR UPDATE",
-      [input.resourceId, customerId],
-    );
-    if (!card.rows[0]) throw new Error("OPERATION_NOT_FOUND");
-    if (card.rows[0].status !== "LOCKED") await client.query("UPDATE cards SET status='LOCKED' WHERE id=$1", [input.resourceId]);
-    await client.query("UPDATE agent_tasks SET status='SUCCEEDED',updated_at=now() WHERE id=$1 AND customer_id=$2", [input.taskId, customerId]);
-    await writeAudit({ customerId, eventType: "CARD_LOCKED", actorType: "BANK_CORE", summary: "客户确认后锁定卡片", taskId: input.taskId, operationId, evidence: { cardId: input.resourceId } }, client);
-    return { operationId, status: "SUCCEEDED", card: `${card.rows[0].card_name} ${card.rows[0].masked_no}` };
-  });
-}
-
 export async function POST(request: Request, context: RouteContext<"/api/operations/[operationId]/commit">) {
   try {
     assertSameOrigin(request);
@@ -43,11 +22,38 @@ export async function POST(request: Request, context: RouteContext<"/api/operati
     const input = schema.parse(await request.json());
     const { operationId } = await context.params;
     if (input.type === "SUBSCRIPTION_CANCEL") throw new Error("NOT_IMPLEMENTED");
-    const result = input.type === "TRANSFER"
-      ? await commitTransfer(principal.customerId, operationId, { totpCode: input.totpCode ?? input.code, taskId: input.taskId })
-      : await commitCardLock(principal.customerId, operationId, input);
+    let result;
+    if (input.type === "TRANSFER") {
+      result = await commitTransfer(principal.customerId, operationId, { totpCode: input.totpCode ?? input.code, taskId: input.taskId });
+    } else {
+      if (!input.resourceId || !input.taskId) throw new Error("RESOURCE_REQUIRED");
+      result = await commitPreparedCardLock(principal.customerId, operationId, { resourceId: input.resourceId, taskId: input.taskId });
+    }
     if ("authError" in result) return Response.json({ error: result.authError, message: "强验证失败，资金未转出" }, { status: 401 });
-    return Response.json(result);
+    let agent = null;
+    let agentRuntime = input.taskId ? "PENDING_FINALIZATION" : "NOT_APPLICABLE";
+    if (input.taskId) {
+      try {
+        agent = await resumeAgentRuntime({
+          customerId: principal.customerId,
+          taskId: input.taskId,
+          operationId,
+          approved: true,
+        });
+        agentRuntime = "COMPLETED";
+      } catch (resumeError) {
+        await writeAudit({
+          customerId: principal.customerId,
+          taskId: input.taskId,
+          operationId,
+          eventType: "AGENT_RESUME_DEFERRED",
+          actorType: "SYSTEM",
+          summary: "银行操作已完成，Agent 最终回复等待恢复",
+          evidence: { error: resumeError instanceof Error ? resumeError.message : "UNKNOWN" },
+        });
+      }
+    }
+    return Response.json({ ...result, agent, agentRuntime });
   } catch (error) {
     return apiError(error, "EXECUTION_FAILED");
   }

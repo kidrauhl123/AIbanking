@@ -303,3 +303,47 @@ export async function lockCard(customerId: string, cardId: string) {
   await writeAudit({ customerId, eventType: "CARD_LOCKED", actorType: "USER", summary: "客户明确确认后锁定卡片", evidence: { cardId, riskLevel: "YELLOW" } });
   return result.rows[0];
 }
+
+export async function commitPreparedCardLock(
+  customerId: string,
+  operationId: string,
+  input: { resourceId: string; taskId: string },
+) {
+  return withTransaction(async (client) => {
+    const decision = await client.query<{ evidence: { cardId?: string }; task_id: string; task_status: string }>(
+      `SELECT p.evidence,p.task_id,t.status AS task_status FROM policy_decisions p JOIN agent_tasks t ON t.id=p.task_id
+       WHERE p.operation_id=$1 AND p.final_level='YELLOW' AND t.customer_id=$2 FOR UPDATE OF p`,
+      [operationId, customerId],
+    );
+    if (!decision.rowCount || !["AWAITING_AUTH", "AWAITING_CONFIRMATION"].includes(decision.rows[0].task_status)
+      || decision.rows[0].evidence.cardId !== input.resourceId || decision.rows[0].task_id !== input.taskId) {
+      throw new Error("AUTHORIZATION_MISMATCH");
+    }
+    const card = await client.query<{ status: string; card_name: string; masked_no: string }>(
+      "SELECT status,card_name,masked_no FROM cards WHERE id=$1 AND customer_id=$2 FOR UPDATE",
+      [input.resourceId, customerId],
+    );
+    if (!card.rows[0]) throw new Error("OPERATION_NOT_FOUND");
+    if (card.rows[0].status !== "LOCKED") {
+      await client.query("UPDATE cards SET status='LOCKED' WHERE id=$1", [input.resourceId]);
+    }
+    await client.query(
+      "UPDATE agent_tasks SET status='SUCCEEDED',updated_at=now() WHERE id=$1 AND customer_id=$2",
+      [input.taskId, customerId],
+    );
+    await writeAudit({
+      customerId,
+      eventType: "CARD_LOCKED",
+      actorType: "BANK_CORE",
+      summary: "客户确认后锁定卡片",
+      taskId: input.taskId,
+      operationId,
+      evidence: { cardId: input.resourceId },
+    }, client);
+    return {
+      operationId,
+      status: "SUCCEEDED" as const,
+      card: `${card.rows[0].card_name} ${card.rows[0].masked_no}`,
+    };
+  });
+}

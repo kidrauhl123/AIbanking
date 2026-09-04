@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { runAgent } from "@/lib/agent";
+import { randomUUID } from "node:crypto";
+import { runAgentRuntime } from "@/lib/agent-runtime";
 import { AIConfigurationError, AIUpstreamError } from "@/lib/ai";
 import { authenticateRequest } from "@/lib/auth";
 import { apiError, assertSameOrigin } from "@/lib/http";
@@ -11,6 +12,7 @@ const schema = z.object({
     role: z.enum(["user", "assistant"]),
     content: z.string().trim().min(1).max(500),
   })).max(8).default([]),
+  conversationId: z.string().uuid().optional(),
 });
 
 export async function POST(request: Request) {
@@ -19,7 +21,13 @@ export async function POST(request: Request) {
     const principal = await authenticateRequest(request);
     if (principal.kind !== "SESSION") return NextResponse.json({ error: "BANK_APP_SESSION_REQUIRED" }, { status: 403 });
     const input = schema.parse(await request.json());
-    return NextResponse.json(await runAgent(principal.customerId, input.message, input.history));
+    return NextResponse.json(await runAgentRuntime({
+      customerId: principal.customerId,
+      message: input.message,
+      history: input.history,
+      channelType: "PWA",
+      externalConversationId: input.conversationId ?? randomUUID(),
+    }));
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "INVALID_REQUEST" }, { status: 400 });
     if (error instanceof AIConfigurationError) {

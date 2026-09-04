@@ -2,7 +2,7 @@
 
 import {
   ArrowDownLeft, ArrowUpRight, Bell, ChartNoAxesColumnIncreasing, Check,
-  ChevronRight, CircleCheck, CreditCard, Eye, House, LockKeyhole,
+  ChevronRight, CircleCheck, CreditCard, Eye, House, Link2, LockKeyhole,
   LogOut, Plus, RefreshCw, Send, ShieldCheck, Sparkles, X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -29,6 +29,7 @@ const prompts = ["查一下我的余额", "分析本月账单", "查看订阅扣
 
 type PreparedTransfer = {
   operationId: string; riskLevel: "YELLOW" | "RED"; requiredAuth: "CONFIRM" | "MFA";
+  taskId?: string;
   details: { amountMinor: number; sourceAccount: { name: string; maskedNo: string }; recipient: { name: string; phoneMasked: string; maskedAccount: string }; note?: string | null };
 };
 
@@ -49,6 +50,7 @@ export function BankingApp() {
   const [actionBusy, setActionBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const authorizationLoaded = useRef(false);
+  const conversationId = useRef("");
 
   const load = async () => {
     setLoading(true);
@@ -65,12 +67,14 @@ export function BankingApp() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chats, sending, tab]);
   useEffect(() => {
     if (!data || authorizationLoaded.current) return;
-    const operationId = new URLSearchParams(location.search).get("authorize");
+    const params = new URLSearchParams(location.search);
+    const operationId = params.get("authorize");
+    const taskId = params.get("task");
     if (!operationId) return;
     authorizationLoaded.current = true;
     fetch(`/api/v1/operations/${encodeURIComponent(operationId)}`).then(async (response) => {
       const result = await response.json(); if (!response.ok) throw new Error(result.message);
-      if (result.status === "AWAITING_AUTH") { setPrepared(result); setDialog("transfer"); }
+      if (result.status === "AWAITING_AUTH") { setPrepared({ ...result, taskId: taskId ?? undefined }); setDialog("transfer"); }
     }).catch((err) => setError(err instanceof Error ? err.message : "无法读取待授权操作"));
   }, [data]);
 
@@ -80,7 +84,8 @@ export function BankingApp() {
     setChats((items) => [...items, { id: crypto.randomUUID(), role: "user", text: message }]);
     try {
       const history = chats.slice(-8).map((item) => ({ role: item.role === "agent" ? "assistant" : "user", content: item.text }));
-      const response = await fetch("/api/agent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history }) });
+      if (!conversationId.current) conversationId.current = crypto.randomUUID();
+      const response = await fetch("/api/agent", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message, history, conversationId: conversationId.current }) });
       const reply = await response.json(); if (!response.ok) throw new Error(reply.message);
       setChats((items) => [...items, { id: crypto.randomUUID(), role: "agent", text: reply.message, reply, state: "idle" }]);
     } catch (err) {
@@ -99,11 +104,22 @@ export function BankingApp() {
         body: JSON.stringify({ confirmed: true, totpCode: verificationCode, taskId, resourceId: operation.resourceId, type: operation.type }),
       });
       const result = await response.json(); if (!response.ok) throw new Error(result.message);
-      setChats((items) => items.map((item) => item.id === itemId ? { ...item, state: "done", receipt: result } : item));
+      setChats((items) => items.map((item) => item.id === itemId ? { ...item, state: "done", text: result.agent?.message ?? item.text, receipt: result } : item));
       setMfa(null); setMfaCode(""); await load();
     } catch (err) {
       setChats((items) => items.map((item) => item.id === itemId ? { ...item, state: "failed", text: `${item.text}\n\n${err instanceof Error ? err.message : "操作失败，资金未变动。"}` } : item));
       setMfa(null); setMfaCode("");
+    }
+  };
+
+  const cancelAgentOperation = async (itemId: string, taskId: string) => {
+    setChats((items) => items.map((item) => item.id === itemId ? { ...item, state: "executing" } : item));
+    try {
+      const response = await fetch(`/api/agent/tasks/${encodeURIComponent(taskId)}/cancel`, { method: "POST" });
+      const result = await response.json(); if (!response.ok) throw new Error(result.message);
+      setChats((items) => items.map((item) => item.id === itemId ? { ...item, state: "done", text: result.agent.message, reply: { ...item.reply!, operation: undefined } } : item));
+    } catch (err) {
+      setChats((items) => items.map((item) => item.id === itemId ? { ...item, state: "failed", text: `${item.text}\n\n${err instanceof Error ? err.message : "取消失败，请重试。"}` } : item));
     }
   };
 
@@ -126,7 +142,7 @@ export function BankingApp() {
       {error && <div className={styles.connectionError}><span>{error}</span><button onClick={load}><RefreshCw size={15} />重试</button></div>}
       <div className={styles.viewport}>
         {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} outgoing={totalOutgoing} onAgent={send} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
-        {tab === "agent" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} bottomRef={bottomRef} />}
+        {tab === "agent" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} onCancel={cancelAgentOperation} bottomRef={bottomRef} />}
         {tab === "activity" && <ActivityView data={data} />}
         {tab === "cards" && <CardsView data={data} onAgent={send} onCreate={() => setDialog("card")} onLocked={load} />}
       </div>
@@ -202,12 +218,12 @@ function TransactionList({ items }: { items: Transaction[] }) {
   </div>)}</div>;
 }
 
-function AgentView({ chats, sending, coreConnected, aiStatus, onPrompt, onCommit, bottomRef }: { chats: ChatItem[]; sending: boolean; coreConnected: boolean; aiStatus: { configured: boolean; model: string | null }; onPrompt: (text: string) => void; onCommit: (itemId: string, operation: Operation, taskId: string) => void; bottomRef: React.RefObject<HTMLDivElement | null> }) {
+function AgentView({ chats, sending, coreConnected, aiStatus, onPrompt, onCommit, onCancel, bottomRef }: { chats: ChatItem[]; sending: boolean; coreConnected: boolean; aiStatus: { configured: boolean; model: string | null }; onPrompt: (text: string) => void; onCommit: (itemId: string, operation: Operation, taskId: string) => void; onCancel: (itemId: string, taskId: string) => void; bottomRef: React.RefObject<HTMLDivElement | null> }) {
   const ready = coreConnected && aiStatus.configured;
   const statusText = !coreConnected ? "银行核心未连接" : aiStatus.configured ? `${aiStatus.model} · 核心已连接` : "真实 AI 模型未配置";
   return <div className={styles.agentView}><div className={styles.agentHeading}><div className={styles.agentOrb}><Sparkles size={21} /></div><div><h1>BankPilot</h1><p><i data-offline={!ready || undefined} /> {statusText}</p></div></div>
     <div className={styles.promptRail}>{prompts.map((prompt) => <button key={prompt} onClick={() => onPrompt(prompt)}>{prompt}</button>)}</div>
-    <div className={styles.messages}>{chats.map((item) => item.role === "user" ? <div className={styles.userMessage} key={item.id}>{item.text}</div> : <div className={styles.agentMessage} key={item.id}><div className={styles.miniOrb}><Sparkles size={13} /></div><div className={styles.messageContent}>{item.reply?.ai && <span className={styles.aiProof}>AI · {item.reply.ai.model} · {Math.round(item.reply.ai.confidence * 100)}%</span>}<p>{item.text}</p>{item.reply?.data && <ReplyData reply={item.reply} />}{item.reply?.operation && <OperationCard item={item} operation={item.reply.operation} onCommit={() => onCommit(item.id, item.reply!.operation!, item.reply!.taskId)} />}</div></div>)}
+    <div className={styles.messages}>{chats.map((item) => item.role === "user" ? <div className={styles.userMessage} key={item.id}>{item.text}</div> : <div className={styles.agentMessage} key={item.id}><div className={styles.miniOrb}><Sparkles size={13} /></div><div className={styles.messageContent}>{item.reply?.ai && <span className={styles.aiProof}>AI · {item.reply.ai.model} · {Math.round(item.reply.ai.confidence * 100)}%</span>}<p>{item.text}</p>{item.reply?.data && <ReplyData reply={item.reply} />}{item.reply?.operation && <OperationCard item={item} operation={item.reply.operation} onCommit={() => onCommit(item.id, item.reply!.operation!, item.reply!.taskId)} onCancel={() => onCancel(item.id, item.reply!.taskId)} />}</div></div>)}
       {sending && <div className={styles.agentMessage}><div className={styles.miniOrb}><Sparkles size={13} /></div><div className={styles.typing}><i /><i /><i /></div></div>}<div ref={bottomRef} />
     </div></div>;
 }
@@ -226,14 +242,14 @@ function ReplyData({ reply }: { reply: Reply }) {
   return null;
 }
 
-function OperationCard({ item, operation, onCommit }: { item: ChatItem; operation: Operation; onCommit: () => void }) {
+function OperationCard({ item, operation, onCommit, onCancel }: { item: ChatItem; operation: Operation; onCommit: () => void; onCancel: () => void }) {
   const done = item.state === "done";
   return <section className={`${styles.operationCard} ${done ? styles.operationDone : ""}`}>
     <div className={styles.operationHead}><span className={styles.riskDot} data-level={operation.riskLevel} /><div><small>可验证操作凭证</small><b>{done ? "执行成功" : operation.title}</b></div>{done ? <CircleCheck size={22} /> : <span className={styles.riskTag} data-level={operation.riskLevel}>{operation.riskLevel}</span>}</div>
     <div className={styles.operationAmount}>{operation.details[0]?.value}</div><dl>{operation.details.slice(1).map((detail) => <div key={detail.label}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
     <div className={styles.operationId}><span>操作编号</span><code>{operation.operationId}</code></div>
-    {done ? <div className={styles.successReceipt}><Check size={16} /><span><b>账本已入账</b><small>{item.receipt?.receipt?.reference ?? "状态已同步至银行核心"}</small></span></div> : <button className={styles.executeButton} disabled={item.state === "executing"} onClick={onCommit}>{item.state === "executing" ? <RefreshCw className={styles.spin} size={17} /> : operation.requiredAuth === "MFA" ? <LockKeyhole size={17} /> : <ShieldCheck size={17} />}{item.state === "executing" ? "银行核心处理中" : operation.actionLabel}</button>}
-    {!done && <p className={styles.authorizationNote}>{operation.requiredAuth === "MFA" ? "需要登录密码复核 · 授权仅绑定本次交易" : "点击即表示你确认以上信息"}</p>}
+    {done ? <div className={styles.successReceipt}><Check size={16} /><span><b>{item.receipt ? "账本已入账" : "操作已取消"}</b><small>{item.receipt?.receipt?.reference ?? "银行核心未执行这项操作"}</small></span></div> : <div className={styles.operationActions}><button className={styles.cancelOperation} disabled={item.state === "executing"} onClick={onCancel}>取消</button><button className={styles.executeButton} disabled={item.state === "executing"} onClick={onCommit}>{item.state === "executing" ? <RefreshCw className={styles.spin} size={17} /> : operation.requiredAuth === "MFA" ? <LockKeyhole size={17} /> : <ShieldCheck size={17} />}{item.state === "executing" ? "处理中" : operation.actionLabel}</button></div>}
+    {!done && <p className={styles.authorizationNote}>{operation.requiredAuth === "MFA" ? "需要验证器动态码 · 授权仅绑定本次交易" : "点击即表示你确认以上信息"}</p>}
   </section>;
 }
 
@@ -277,8 +293,17 @@ function TransferModal({ account, mfaConfigured, prepared, setPrepared, busy, se
   const authorize = async () => {
     if (!prepared) return; setBusy(true); setError("");
     try {
-      const response = await fetch(`/api/v1/operations/${prepared.operationId}/authorize`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ totpCode: prepared.requiredAuth === "MFA" ? code : undefined }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.message ?? (result.error === "AUTH_INVALID" ? "密码复核失败" : "执行失败")); await done();
+      const response = await fetch(
+        prepared.taskId ? `/api/operations/${prepared.operationId}/commit` : `/api/v1/operations/${prepared.operationId}/authorize`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(prepared.taskId
+            ? { confirmed: true, totpCode: prepared.requiredAuth === "MFA" ? code : undefined, taskId: prepared.taskId, type: "TRANSFER" }
+            : { totpCode: prepared.requiredAuth === "MFA" ? code : undefined }),
+        },
+      );
+      const result = await response.json(); if (!response.ok) throw new Error(result.message ?? (result.error === "AUTH_INVALID" ? "动态验证码验证失败" : "执行失败")); await done();
     } catch (err) { setError(err instanceof Error ? err.message : "资金未转出"); } finally { setBusy(false); }
   };
   return <ModalShell eyebrow={prepared ? `${prepared.riskLevel} · ${prepared.requiredAuth === "MFA" ? "强验证" : "明确确认"}` : "TRANSFER · 两阶段执行"} title={prepared ? "核对转账单据" : "发起转账"} close={close}>{!prepared ? <><p>收款人必须是已注册的 BankPilot 用户。可输入准确姓名或完整手机号。</p><form className={styles.actionForm} onSubmit={prepare}>
@@ -293,7 +318,7 @@ function CardModal({ account, busy, setBusy, close, done }: { account: Account; 
 }
 
 function ProfileModal({ data, close, logout }: { data: Bootstrap; close: () => void; logout: () => Promise<void> }) {
-  return <ModalShell eyebrow="IDENTITY · 当前会话" title={data.customer.display_name} close={close}><div className={styles.profileRows}><div><span>手机号</span><b>{data.customer.phone}</b></div><div><span>收款识别</span><b>姓名或手机号</b></div><div><span>账户号</span><b>{data.accounts[0]?.account_no ?? "—"}</b></div></div><a className={styles.developerLink} href="/security"><ShieldCheck size={17} /><span><b>安全中心</b><small>{data.customer.mfa_configured ? "TOTP 多因素认证已启用" : "设置红色操作强验证"}</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/developers"><Sparkles size={17} /><span><b>连接外部 Agent</b><small>创建范围令牌并查看 MCP 文档</small></span><ChevronRight size={17} /></a><button className={styles.logoutButton} onClick={logout}><LogOut size={17} />退出登录</button></ModalShell>;
+  return <ModalShell eyebrow="IDENTITY · 当前会话" title={data.customer.display_name} close={close}><div className={styles.profileRows}><div><span>手机号</span><b>{data.customer.phone}</b></div><div><span>收款识别</span><b>姓名或手机号</b></div><div><span>账户号</span><b>{data.accounts[0]?.account_no ?? "—"}</b></div></div><a className={styles.developerLink} href="/security"><ShieldCheck size={17} /><span><b>安全中心</b><small>{data.customer.mfa_configured ? "TOTP 多因素认证已启用" : "设置红色操作强验证"}</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/channels"><Link2 size={17} /><span><b>消息渠道</b><small>查看或撤销企业微信身份绑定</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/developers"><Sparkles size={17} /><span><b>连接外部 Agent</b><small>创建范围令牌并查看 MCP 文档</small></span><ChevronRight size={17} /></a><button className={styles.logoutButton} onClick={logout}><LogOut size={17} />退出登录</button></ModalShell>;
 }
 
 function ReauthModal({ code, setCode, close, submit }: { code: string; setCode: (value: string) => void; close: () => void; submit: () => void }) {

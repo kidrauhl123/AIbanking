@@ -10,14 +10,15 @@ BankPilot 是为“银行 AI 智能体”赛题构建的可运行 PWA 沙箱银�
 - 用户主动入金、注册用户间转账、原子双分录账本和幂等操作编号
 - 绿色查询、黄色明确确认、红色 TOTP 多因素认证和三次失败熔断
 - 虚拟卡申请、卡片锁定、真实流水与基于已有流水的账单分析
-- 官方内置 Agent：大模型结构化意图、受控 DAG、事实落地回复、操作授权单
+- 官方内置 Agent：LangGraph 持久化状态机、大模型结构化意图、可中断 DAG、事实落地回复
+- 腾讯渠道：企业微信智能机器人长连接、一次性账户绑定、黄色卡片确认、红色回 APP 强验证
 - 外部 Agent：Streamable HTTP MCP、逐令牌 scope、30 天有效期、撤销和调用审计
 - 开发者接入中心、安全中心、用户审计台和 PWA 安装能力
 - 理财产品表只接受带原始来源和核验时间的记录；无可靠数据时返回空数组
 
 ## 为什么保留两种 Agent 形态
 
-内置 Agent 是比赛的主体验，团队控制模型提示、对话状态、任务规划和授权交互。外部 Agent 接口用于证明银行能力可被 Claude、ChatGPT、自研 Agent 等安全复用。两者共用 `Bank Core`，不存在两套余额或两套风控逻辑。
+内置 Agent 是比赛的主体验，团队控制模型提示、对话状态、任务规划和授权交互。企业微信复用同一 Agent Runtime，外部 Agent 接口则用于证明银行能力可被 Claude、ChatGPT、自研 Agent 等安全复用。所有入口共用 `Bank Core`，不存在多套余额或多套风控逻辑。
 
 外部 Agent 的安全边界：
 
@@ -44,6 +45,8 @@ npm run dev
 打开 `http://localhost:3000`。首次运行没有任何业务数据，请注册两个不同用户，用其中一个入金，再通过姓名或手机号向另一个用户转账。
 
 数据库迁移由 `schema_migrations` 记录，每个文件只执行一次。`002_identity_and_platform.sql` 会在旧原型首次升级时清除旧版预置数据；已升级环境不会再次执行。
+
+企业微信机器人是可选的独立进程，需要在企业微信管理端取得机器人 ID 与 Secret。接入和本地联调方式见 [企业微信接入文档](docs/WECOM.md)。
 
 ## AI 配置
 
@@ -73,6 +76,7 @@ npm run db:verify
 
 - [系统架构](docs/ARCHITECTURE.md)
 - [MCP 与外部 Agent 接入](docs/MCP.md)
+- [企业微信智能机器人接入](docs/WECOM.md)
 - [安全设计与已知风险](docs/SECURITY.md)
 - [部署说明](docs/DEPLOYMENT.md)
 - [验收脚本](docs/DEMO_SCRIPT.md)

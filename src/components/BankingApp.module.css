@@ -128,6 +128,10 @@
 .operationId code { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ink); }
 .executeButton, .primaryButton { width: calc(100% - 28px); margin: 0 14px; min-height: 42px; border: 0; border-radius: 11px; background: var(--ink); color: white; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 11px; font-weight: 680; cursor: pointer; }
 .executeButton:disabled, .primaryButton:disabled { opacity: .45; cursor: default; }
+.operationActions { display: grid; grid-template-columns: 78px 1fr; gap: 8px; margin: 0 14px; }
+.operationActions .executeButton { width: 100%; margin: 0; }
+.cancelOperation { min-height: 42px; border: 1px solid var(--line); border-radius: 11px; background: white; color: var(--muted); font-size: 10px; font-weight: 650; cursor: pointer; }
+.cancelOperation:disabled { opacity: .45; cursor: default; }
 .authorizationNote { text-align: center; color: var(--muted); font-size: 8px !important; padding: 9px 10px 12px !important; }
 .operationDone { border-color: #bde0d4; }
 .operationDone .operationHead > svg { color: var(--positive); }

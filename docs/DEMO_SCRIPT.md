@@ -38,6 +38,16 @@
 
 未配置模型时，验收正确结果是显示“真实 AI 模型未配置”，而不是输出关键词匹配的假回复。
 
+## LangGraph 中断恢复 / 企业微信
+
+1. 在企业微信首次发“查余额”，打开 10 分钟绑定链接并用 BankPilot 会话确认。
+2. 再次查余额，展示与 PWA 一致的真实账户事实；审计台应标记渠道 `WECOM`。
+3. 发起黄色小额转账，LangGraph 状态显示 `INTERRUPTED / CONFIRM`，资金未动。
+4. 点击模板卡片确认，Bank Core 只执行一次；runtime 恢复为 `COMPLETED`，企业微信收到核验后的最终回复。
+5. 发起红色转账，企业微信只出现 APP 深链；在 BankPilot 输入 TOTP 后执行并恢复。
+6. 重放相同消息或重复点击卡片，验证不会产生重复模型任务或重复账本分录。
+7. 展示审计台中的模型计划、LangGraph 状态、渠道事件、策略裁决、核心结果。
+
 ## 作品简介（200 字内）
 
 BankPilot 是一款面向银行业务的双形态 AI 智能体 PWA：既提供银行内置自然语言助手，也以最小权限 MCP 接入外部 Agent。大模型负责意图与任务 DAG，确定性策略实现绿色自动、黄色确认、红色 TOTP 强验证；所有资金操作经用户授权、原子事务与双分录账本完成，并保留端到端审计。系统支持多用户自行注册，零预置业务数据，余额、流水与卡片均由真实测试操作产生。
@@ -45,8 +55,8 @@ BankPilot 是一款面向银行业务的双形态 AI 智能体 PWA：既提供�
 ## 答辩主线
 
 1. 痛点与目标：从找菜单变成说需求，但不牺牲银行控制权。
-2. 产品：PWA、内置 Agent、外部 Agent 接入。
-3. 架构：LLM → Schema → DAG → Policy → Authorization → Core → Receipt。
+2. 产品：PWA、企业微信、内置 Agent、外部 Agent 接入。
+3. 架构：LLM → Schema → LangGraph DAG → interrupt → Policy/Authorization → Core → verified reply。
 4. 安全：权限分级、TOTP、注入隔离、熔断、审计、双分录。
 5. 真实性：没有预置业务数据；无可靠理财来源就返回空，不编造。
 6. 落地：比赛沙箱验证契约，未来把 Bank Core Adapter 替换为持牌银行网关。

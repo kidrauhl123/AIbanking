@@ -30,9 +30,14 @@ export type AgentReply = {
   data?: Record<string, unknown>;
   suggestions?: string[];
   ai: { model: string; confidence: number };
+  runtime?: {
+    runId: string;
+    status: "COMPLETED" | "INTERRUPTED" | "CANCELLED";
+    interruptKind?: "CONFIRM" | "MFA";
+  };
 };
 
-type ModelMeta = {
+export type ModelMeta = {
   model: string;
   promptTokens: number | null;
   completionTokens: number | null;
@@ -333,7 +338,7 @@ async function handleTransfer(customerId: string, message: string, understanding
       title: "转账确认",
       riskLevel: prepared.riskLevel,
       requiredAuth: prepared.requiredAuth,
-      actionLabel: prepared.requiredAuth === "MFA" ? "复核密码并转账" : "确认转账",
+      actionLabel: prepared.requiredAuth === "MFA" ? "验证动态码并转账" : "确认转账",
       details: [
         { label: "金额", value: formatMinor(amountMinor) },
         { label: "收款人", value: `${prepared.details.recipient.name} ${prepared.details.recipient.phoneMasked}` },
@@ -352,18 +357,32 @@ async function handleUnknown(customerId: string, message: string, understanding:
   return { taskId, intent: "UNKNOWN", message: response.message, suggestions: response.suggestions, ai: { model: meta.model, confidence: understanding.confidence } };
 }
 
-export async function runAgent(customerId: string, message: string, history: ConversationMessage[] = []): Promise<AgentReply> {
+export async function planAgentRequest(message: string, history: ConversationMessage[] = []) {
   const normalized = message.trim().slice(0, 500);
   const planned = await understandWithAI(normalized, history);
   const understanding = planned.value.confidence < 0.55
     ? { ...planned.value, intent: "UNKNOWN" as const, steps: ["clarify_intent" as const] }
     : planned.value;
+  return { normalized, understanding, meta: planned.meta };
+}
+
+export async function executePlannedAgent(
+  customerId: string,
+  message: string,
+  understanding: AgentUnderstanding,
+  meta: ModelMeta,
+): Promise<AgentReply> {
   switch (understanding.intent) {
-    case "BALANCE": return handleBalance(customerId, normalized, understanding, planned.meta);
-    case "BILL_ANALYSIS": return handleBillAnalysis(customerId, normalized, understanding, planned.meta);
-    case "SUBSCRIPTIONS": return handleSubscriptions(customerId, normalized, understanding, planned.meta);
-    case "CARD_LOCK": return handleCardLock(customerId, normalized, understanding, planned.meta);
-    case "TRANSFER": return handleTransfer(customerId, normalized, understanding, planned.meta);
-    case "UNKNOWN": return handleUnknown(customerId, normalized, understanding, planned.meta);
+    case "BALANCE": return handleBalance(customerId, message, understanding, meta);
+    case "BILL_ANALYSIS": return handleBillAnalysis(customerId, message, understanding, meta);
+    case "SUBSCRIPTIONS": return handleSubscriptions(customerId, message, understanding, meta);
+    case "CARD_LOCK": return handleCardLock(customerId, message, understanding, meta);
+    case "TRANSFER": return handleTransfer(customerId, message, understanding, meta);
+    case "UNKNOWN": return handleUnknown(customerId, message, understanding, meta);
   }
+}
+
+export async function runAgent(customerId: string, message: string, history: ConversationMessage[] = []): Promise<AgentReply> {
+  const planned = await planAgentRequest(message, history);
+  return executePlannedAgent(customerId, planned.normalized, planned.understanding, planned.meta);
 }
