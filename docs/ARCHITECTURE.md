@@ -24,7 +24,7 @@ Next.js App Router + React。支持注册、登录、账户、流水、入金、
 
 ### LangGraph Agent Runtime
 
-每个请求创建独立的 LangGraph run，并把 checkpoint 写入 PostgreSQL。规划节点调用真实模型，随后路由到余额、账单、订阅、转账或卡片节点。只读任务直接结束；写任务在 `authorization_gate` 调用 `interrupt()`，持久化后等待用户确认。授权完成后用同一 `graph_thread_id` 恢复，并从 Bank Core 重读最终状态，再生成回复。
+每个请求创建独立的 LangGraph run，并把 checkpoint 写入 PostgreSQL 的 `langgraph` schema；checkpoint 表由版本化迁移预先创建，不在客户请求中动态执行 DDL。规划节点调用真实模型，随后路由到余额、账单、订阅、转账或卡片节点。只读任务直接结束；写任务在 `authorization_gate` 调用 `interrupt()`，持久化后等待用户确认。授权完成后用同一 `graph_thread_id` 恢复，并从 Bank Core 重读最终状态，再生成回复。
 
 模型采用两次受约束调用：第一次输出通过 Zod 校验的意图、实体和步骤；银行工具返回事实后，第二次只能根据 `BANK_FACTS` 生成说明。模型不能生成 SQL、调用任意 URL 或直接提交账本。重复授权由 runtime 原子抢占，只有一个请求能从 `INTERRUPTED` 进入 `RUNNING`。
 

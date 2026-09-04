@@ -18,6 +18,7 @@ services:
       - ../db/migrations/001_init.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
       - ../db/migrations/002_identity_and_platform.sql:/docker-entrypoint-initdb.d/20-platform.sql:ro
       - ../db/migrations/003_agent_runtime_and_channels.sql:/docker-entrypoint-initdb.d/30-agent-runtime.sql:ro
+      - ../db/migrations/004_langgraph_checkpoint_schema.sql:/docker-entrypoint-initdb.d/40-langgraph-checkpoints.sql:ro
     networks:
       - internal
     mem_limit: 512m
