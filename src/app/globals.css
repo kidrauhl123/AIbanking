@@ -19,11 +19,24 @@
 * { box-sizing: border-box; padding: 0; margin: 0; }
 html { min-height: 100%; background: var(--paper); }
 body { min-height: 100%; color: var(--ink); background: var(--paper); font-family: var(--font-sans); font-size: var(--text-body); line-height: 1.5; letter-spacing: -.011em; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-button, input { font: inherit; }
-button { color: inherit; }
+button, input, select, textarea { font: inherit; }
+button {
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+a, button, input, select, textarea, summary, label, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
 a { color: inherit; text-decoration: none; }
 ::selection { background: var(--accent-soft); }
+:focus:not(:focus-visible) { outline: none; }
 :focus-visible { outline: 3px solid rgba(57,122,25,.28); outline-offset: 2px; }
+
+@media (hover: none) and (pointer: coarse) {
+  a:active, button:not(:disabled):active, summary:active, [role="button"]:active { opacity: .72; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
