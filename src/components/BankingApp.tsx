@@ -49,6 +49,7 @@ export function BankingApp() {
   const [prepared, setPrepared] = useState<PreparedTransfer | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const authorizationLoaded = useRef(false);
   const conversationId = useRef("");
 
@@ -64,7 +65,11 @@ export function BankingApp() {
   };
 
   useEffect(() => { load(); }, []);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chats, sending, tab]);
+  useEffect(() => {
+    if (tab !== "agent") return;
+    const viewport = viewportRef.current;
+    viewport?.scrollTo({ top: viewport.scrollHeight, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+  }, [chats, sending, tab]);
   useEffect(() => {
     if (!data || authorizationLoaded.current) return;
     const params = new URLSearchParams(location.search);
@@ -140,7 +145,7 @@ export function BankingApp() {
         <button className={styles.iconButton} aria-label="通知"><Bell size={20} strokeWidth={1.8} /><i /></button>
       </header>
       {error && <div className={styles.connectionError}><span>{error}</span><button onClick={load}><RefreshCw size={15} />重试</button></div>}
-      <div className={styles.viewport}>
+      <div className={styles.viewport} ref={viewportRef}>
         {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} outgoing={totalOutgoing} onAgent={send} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
         {tab === "agent" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} onCancel={cancelAgentOperation} bottomRef={bottomRef} />}
         {tab === "activity" && <ActivityView data={data} />}

@@ -17,7 +17,8 @@
 }
 
 * { box-sizing: border-box; padding: 0; margin: 0; }
-html { min-height: 100%; background: var(--paper); }
+html { min-height: 100%; background: var(--paper); overscroll-behavior-y: none; }
+body { overscroll-behavior-y: none; }
 body { min-height: 100%; color: var(--ink); background: var(--paper); font-family: var(--font-sans); font-size: var(--text-body); line-height: 1.5; letter-spacing: -.011em; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 button, input, select, textarea { font: inherit; }
 button {
