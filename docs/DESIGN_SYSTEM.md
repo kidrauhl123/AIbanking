@@ -24,7 +24,8 @@ Wise's proprietary font, logo, or exact brand palette.
 
 - Banking and Agent are separate user flows. Banking buttons open their own screens
   and call authenticated banking APIs directly; they must never send a hidden prompt
-  or switch to chat. Only the dedicated AI Assistant tab starts a conversation.
+  or switch to chat. The dedicated AI Assistant tab and the clearly labelled home
+  AI card open chat without sending a message; the user chooses what to ask.
 - Statements aggregate the complete calendar month in Asia/Shanghai, independent
   of the recent-transactions list. Unavailable data must not appear as zero activity.
 - Stopping a bank debit is not cancelling the merchant's subscription; label both

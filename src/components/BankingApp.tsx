@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ServiceWorkerRegister } from "./ServiceWorkerRegister";
-import { StatementView, SubscriptionsView } from "./BankingViews";
 import type { BankStatement } from "@/lib/banking-report";
 import styles from "./BankingApp.module.css";
 
@@ -23,7 +22,7 @@ type Operation = {
 };
 type Reply = { taskId: string; intent: string; message: string; operation?: Operation; data?: Record<string, unknown>; suggestions?: string[]; ai?: { model: string; confidence: number } };
 type ChatItem = { id: string; role: "user" | "agent"; text: string; reply?: Reply; state?: "idle" | "executing" | "done" | "failed"; receipt?: { operationId: string; status: string; receipt?: { reference?: string }; amountMinor?: number; beneficiary?: string; card?: string } };
-type Tab = "home" | "agent" | "activity" | "cards" | "analysis" | "subscriptions";
+type Tab = "home" | "agent" | "activity" | "cards";
 
 const money = (minor: number | string) => new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", minimumFractionDigits: 2 }).format(Number(minor) / 100);
 const shortDate = (date: string) => new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric" }).format(new Date(date));
@@ -147,16 +146,14 @@ export function BankingApp() {
       </header>
       {error && <div className={styles.connectionError}><span>{error}</span><button onClick={load}><RefreshCw size={15} />重试</button></div>}
       <div className={styles.viewport} ref={viewportRef}>
-        {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} onAnalysis={() => setTab("analysis")} onSubscriptions={() => setTab("subscriptions")} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
+        {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} onOpenAgent={() => setTab("agent")} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
         {tab === "agent" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} onCancel={cancelAgentOperation} bottomRef={bottomRef} />}
         {tab === "activity" && <ActivityView data={data} />}
         {tab === "cards" && <CardsView data={data} onCreate={() => setDialog("card")} onLocked={load} />}
-        {tab === "analysis" && <StatementView initial={data?.statement} onBack={() => setTab("home")} />}
-        {tab === "subscriptions" && <SubscriptionsView items={data?.subscriptions ?? []} available={!!data} onBack={() => setTab("home")} onChanged={load} />}
       </div>
       {tab === "agent" && <form className={styles.composer} onSubmit={onSubmit}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="说出你想办理的业务…" aria-label="向银行 Agent 发送消息" /><button type="submit" disabled={!input.trim() || sending} aria-label="发送"><Send size={18} /></button></form>}
       <nav className={styles.nav} aria-label="主导航">
-        <NavButton active={["home", "analysis", "subscriptions"].includes(tab)} label="首页" icon={<House size={21} />} onClick={() => setTab("home")} />
+        <NavButton active={tab === "home"} label="首页" icon={<House size={21} />} onClick={() => setTab("home")} />
         <NavButton active={tab === "agent"} label="AI 助手" icon={<Sparkles size={21} />} onClick={() => setTab("agent")} />
         <NavButton active={tab === "activity"} label="明细" icon={<ChartNoAxesColumnIncreasing size={21} />} onClick={() => setTab("activity")} />
         <NavButton active={tab === "cards"} label="卡片" icon={<CreditCard size={21} />} onClick={() => setTab("cards")} />
@@ -202,16 +199,15 @@ function NavButton({ active, label, icon, onClick }: { active: boolean; label: s
   return <button className={active ? styles.navActive : ""} onClick={onClick}>{icon}<span>{label}</span></button>;
 }
 
-function HomeView({ data, loading, visible, toggleVisible, onAnalysis, onSubscriptions, onDeposit, onTransfer }: { data: Bootstrap | null; loading: boolean; visible: boolean; toggleVisible: () => void; onAnalysis: () => void; onSubscriptions: () => void; onDeposit: () => void; onTransfer: () => void }) {
+function HomeView({ data, loading, visible, toggleVisible, onOpenAgent, onDeposit, onTransfer }: { data: Bootstrap | null; loading: boolean; visible: boolean; toggleVisible: () => void; onOpenAgent: () => void; onDeposit: () => void; onTransfer: () => void }) {
   return <div className={styles.home}>
     <section className={styles.balanceBlock}><div className={styles.labelRow}><span>总资产</span><button onClick={toggleVisible} aria-label="隐藏或显示余额"><Eye size={16} /></button></div><div className={styles.balance}>{loading ? "—" : visible ? money(data?.totalMinor ?? 0) : "••••••"}</div><div className={styles.balanceMeta}><span>可用余额</span><span>{data?.accounts[0]?.masked_no ?? "账户未就绪"}</span></div></section>
     <div className={styles.quickActions}>
       <button onClick={onTransfer}><span><ArrowUpRight /></span>转账</button>
       <button onClick={onDeposit}><span><Plus /></span>入金</button>
-      <button onClick={onAnalysis}><span><ChartNoAxesColumnIncreasing /></span>分析</button>
-      <button onClick={onSubscriptions}><span><RefreshCw /></span>订阅</button>
     </div>
-    <section className={styles.section}><div className={styles.sectionHead}><div><p>本月支出与转出</p><h2>{data ? money(data.statement.expenseMinor) : "—"}</h2></div><button onClick={onAnalysis}>分析</button></div>{data?.statement.expenseMinor === 0 && <p className={styles.emptyCopy}>本月还没有支出记录。</p>}</section>
+    <button className={styles.agentCallout} onClick={onOpenAgent} aria-label="打开 AI 助手"><span className={styles.agentMark}><Sparkles size={20} /></span><span><b>问 BankPilot</b><small>查账、转账、管卡，一句话就行</small></span><ChevronRight size={18} /></button>
+    <section className={styles.section}><div className={styles.sectionHead}><div><p>本月支出与转出</p><h2>{data ? money(data.statement.expenseMinor) : "—"}</h2></div></div>{data?.statement.expenseMinor === 0 && <p className={styles.emptyCopy}>本月还没有支出记录。</p>}</section>
     <section className={styles.section}><div className={styles.sectionTitle}><h2>最近交易</h2><span>{data?.transactions.length ?? 0} 笔</span></div><TransactionList items={data?.transactions.slice(0, 4) ?? []} /></section>
   </div>;
 }
