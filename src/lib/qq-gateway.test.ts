@@ -53,6 +53,15 @@ describe("QQ gateway security boundary", () => {
     expect(mocks.runAgentRuntime).not.toHaveBeenCalled();
   });
 
+  it("answers repeated binding commands from the verified identity without a model", async () => {
+    mocks.resolveChannelIdentity.mockResolvedValue({ id: "identity-1", customer_id: "customer-1" });
+    const result = await handleQqMessage({ ...messageInput, message: "绑定" });
+    expect(result.status).toBe("COMPLETED");
+    expect(result.reply?.message).toContain("已经连接");
+    expect(mocks.runAgentRuntime).not.toHaveBeenCalled();
+    expect(mocks.createChannelBindingToken).not.toHaveBeenCalled();
+  });
+
   it("never executes an MFA operation inside QQ", async () => {
     mocks.resolveChannelIdentity.mockResolvedValue({ id: "identity-1", customer_id: "customer-1" });
     mocks.inspectAgentRun.mockResolvedValue({ status: "INTERRUPTED", operation_id: "TRF-1", channel_type: "QQ", channel_identity_id: "identity-1", interrupt_kind: "MFA" });

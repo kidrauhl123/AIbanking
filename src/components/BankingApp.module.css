@@ -74,6 +74,7 @@
 .emptyState span { color: var(--ink); font-size: 15px; font-weight: 650; }.emptyState small { font-size: 13px; line-height: 1.5; }
 
 .agentView { min-height: 100%; padding: 9px 16px 26px; }
+.channelEntry { min-height: 48px; display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; font-size: 14px; }.channelEntry > span { display: flex; align-items: center; gap: 6px; }.channelEntry > svg { margin-left: auto; color: var(--muted); }
 .agentHeading { display: flex; align-items: center; gap: 11px; margin: 5px 3px 14px; }
 .agentOrb { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 15px; background: var(--ink); color: white; }
 .agentHeading h1 { font-size: 23px; letter-spacing: -.035em; }

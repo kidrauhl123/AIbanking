@@ -34,6 +34,7 @@ export function apiError(error: unknown, fallback = "REQUEST_FAILED") {
     OPERATION_TYPE_NOT_SUPPORTED: 422,
     RESOURCE_REQUIRED: 422,
     BINDING_TOKEN_INVALID: 400,
+    CHANNEL_BINDING_MISMATCH: 409,
     CHANNEL_ALREADY_BOUND: 409,
     CHANNEL_IDENTITY_NOT_FOUND: 404,
     OUTBOX_ITEM_NOT_FOUND: 404,
@@ -45,6 +46,7 @@ export function apiError(error: unknown, fallback = "REQUEST_FAILED") {
 
 function authMessage(code: string) {
   const messages: Record<string, string> = {
+    ACCOUNT_CHANGED: "登录账户已发生变化，请重新核对后再确认连接",
     AUTHENTICATION_REQUIRED: "请先登录",
     SESSION_EXPIRED: "登录已过期，请重新登录",
     INVALID_API_TOKEN: "Agent 访问令牌无效或已过期",

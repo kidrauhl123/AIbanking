@@ -49,6 +49,10 @@ services:
       BANKPILOT_PUBLIC_URL: ${BANKPILOT_PUBLIC_URL}
       WECOM_ADAPTER_TOKEN: ${WECOM_ADAPTER_TOKEN:-}
       QQ_ADAPTER_TOKEN: ${QQ_ADAPTER_TOKEN:-}
+      QQ_BOT_ENTRY_URL: ${QQ_BOT_ENTRY_URL:-}
+      QQ_BOT_NAME: ${QQ_BOT_NAME:-BankPilot}
+      WECOM_BOT_ENTRY_URL: ${WECOM_BOT_ENTRY_URL:-}
+      WECOM_BOT_NAME: ${WECOM_BOT_NAME:-BankPilot}
       NODE_ENV: production
     depends_on:
       postgres:

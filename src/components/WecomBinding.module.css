@@ -143,6 +143,9 @@
 }
 
 .primary:disabled { opacity: .58; }
+.primary + .secondary, .success + .primary, .success + .secondary { margin-top: 12px; }
+.secondary + .secondary { margin-top: 10px; }
+.account { display: flex; flex-direction: column; gap: 6px; padding: 18px; margin-top: 20px; border: 1px solid var(--line); border-radius: 14px; }.account b { font-size: 20px; }.account span { color: var(--muted); font-size: 15px; }
 .secondary { color: var(--ink); background: #eef2eb; }
 .success {
   min-height: 48px;

@@ -64,7 +64,7 @@ export async function handleChannelMessage(config: GatewayConfig, input: Channel
     });
     return {
       status: "BINDING_REQUIRED" as const,
-      message: "为了保护账户，请先在 BankPilot 完成一次安全绑定。绑定链接 10 分钟内有效。",
+      message: "请打开下方链接，在 BankPilot 登录并核对账户，再点“确认连接”。链接 10 分钟内有效。完成后回到这里重新发送你的请求。",
       bindUrl,
       expiresAt: binding.expiresAt,
     };
@@ -75,6 +75,9 @@ export async function handleChannelMessage(config: GatewayConfig, input: Channel
      WHERE channel_type=$4 AND direction='INBOUND' AND external_event_id=$1`,
     [input.eventId, identity.id, identity.customer_id, config.channelType],
   );
+  if (["绑定", "/bind"].includes(input.message.trim())) {
+    return { status: "COMPLETED" as const, reply: { message: "当前聊天身份已经连接 BankPilot。发送“查余额”即可开始使用；如需解绑，请打开 BankPilot 的消息渠道页面。" } };
+  }
   const reply = await runAgentRuntime({
     customerId: identity.customer_id,
     message: input.message,

@@ -38,6 +38,9 @@ docker compose --env-file deploy/.env.production \
 
 ## 用户流程
 
+PWA 提供选择渠道、添加机器人、发送绑定、核对账户的引导。
+管理员需配置真实机器人添加链接 `WECOM_BOT_ENTRY_URL`；详见 [接入引导](CHANNEL_ONBOARDING.md)。
+
 1. 用户首次给机器人发消息，服务端生成一次性绑定 secret。
 2. 用户打开链接并登录 BankPilot，确认将当前企业微信身份关联到账户。
 3. 绿色查询直接回复。

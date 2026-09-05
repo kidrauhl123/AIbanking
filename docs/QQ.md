@@ -39,6 +39,9 @@ docker compose --env-file deploy/.env.production \
 
 ## 用户流程与安全边界
 
+PWA 用户从 AI 助手中的“在 QQ / 企业微信中使用”或个人中心的“消息渠道”进入引导。
+管理员还需配置真实机器人添加链接 `QQ_BOT_ENTRY_URL`；详见 [接入引导](CHANNEL_ONBOARDING.md)。
+
 1. 群消息不进入 Agent，不查询账户，只提示用户私聊机器人。
 2. QQ 私聊首次消息生成 10 分钟一次性绑定链接；secret 位于 URL fragment，不进入服务器访问日志。
 3. 用户打开链接并登录 BankPilot，亲自确认绑定 QQ openid。
