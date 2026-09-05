@@ -30,6 +30,11 @@ BankPilot 是为“银行 AI 智能体”赛题构建的可运行 PWA 沙箱银�
 
 更完整的工具、客户端配置和威胁边界见 [MCP 接入文档](docs/MCP.md)。
 
+下一阶段正在验证“原版 Nanobot + 银行 MCP + Skill”，优先复用现成 Agent，
+业务权限仍由银行内核执行。已有[可运行集成与评测脚本](integrations/nanobot/README.md)，
+能力与缺口见 [Nanobot 评测报告](docs/NANOBOT_EVALUATION.md)。这是独立验证，
+尚未替换线上 LangGraph，也不代表多用户 IM 托管已完成。
+
 ## 本地运行
 
 要求 Node.js 22、PostgreSQL 17 和 `docker-compose`。
@@ -76,6 +81,8 @@ npm run db:verify
 
 - [系统架构](docs/ARCHITECTURE.md)
 - [MCP 与外部 Agent 接入](docs/MCP.md)
+- [Nanobot 接入与运行](integrations/nanobot/README.md)
+- [Nanobot 六类场景评测与缺口](docs/NANOBOT_EVALUATION.md)
 - [企业微信智能机器人接入](docs/WECOM.md)
 - [QQ 官方机器人接入](docs/QQ.md)
 - [安全设计与已知风险](docs/SECURITY.md)

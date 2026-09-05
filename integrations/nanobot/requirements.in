@@ -1,0 +1,2 @@
+# Use the published runtime unchanged. Pin transitive dependencies in requirements.txt.
+nanobot-ai==0.3.0

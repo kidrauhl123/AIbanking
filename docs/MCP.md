@@ -56,3 +56,10 @@
 6. 用 `operations.get` 检查 `SUCCEEDED`，只在银行核心返回成功后宣告成功。
 
 OpenAPI 描述可从 `/api/openapi` 获取。
+
+## 5. Nanobot 可运行示例
+
+[Nanobot 集成目录](../integrations/nanobot/README.md)包含固定版本依赖、原生配置示例、
+银行 Skill、仅暴露银行工具的启动器和真实模型评测脚本。没有修改 Nanobot 源码，
+也没有将银行授权交给 Skill。[评测报告](NANOBOT_EVALUATION.md)区分已跑通能力、
+缺少的银行接口和未验证的多租户/IM 边界。

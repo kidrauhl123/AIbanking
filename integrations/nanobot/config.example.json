@@ -1,0 +1,29 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "${BANKPILOT_NANOBOT_WORKSPACE}",
+      "provider": "custom",
+      "model": "${AI_MODEL}",
+      "unifiedSession": false,
+      "timezone": "Asia/Shanghai"
+    }
+  },
+  "providers": {
+    "custom": {"apiKey": "${AI_API_KEY}", "apiBase": "${AI_BASE_URL}"}
+  },
+  "tools": {
+    "restrictToWorkspace": true,
+    "mcpServers": {
+      "bankpilot": {
+        "type": "streamableHttp",
+        "url": "${BANKPILOT_MCP_URL}",
+        "headers": {"Authorization": "Bearer ${BANKPILOT_MCP_TOKEN}"},
+        "enabledTools": [
+          "banking.accounts.list", "banking.transactions.list", "banking.beneficiaries.list",
+          "banking.cards.list", "banking.subscriptions.list", "banking.investments.products.list",
+          "banking.transfers.prepare", "banking.operations.get"
+        ]
+      }
+    }
+  }
+}

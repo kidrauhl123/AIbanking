@@ -42,3 +42,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local Python integration environments and private Agent state
+**/__pycache__/
+**/.pytest_cache/
+/integrations/nanobot/.venv/
+/integrations/nanobot/private/
