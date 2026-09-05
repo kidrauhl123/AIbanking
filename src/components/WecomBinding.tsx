@@ -74,7 +74,7 @@ export function ChannelBinding({ channelType }: ChannelBindingProps) {
           <div className={styles.identity}><span className={styles.bankMark}>B</span><small>银行账户</small></div>
         </div>
 
-        <p className={styles.eyebrow}>SECURE IDENTITY LINK</p>
+        <p className={styles.eyebrow}>安全连接</p>
         <h1>{state === "DONE" ? "已经连接" : "连接你的银行身份"}</h1>
         <p className={styles.explanation}>{message}</p>
 

@@ -7,22 +7,22 @@
 }
 
 .panel {
-  width: min(100%, 430px);
+  width: min(100%, 440px);
   min-height: 650px;
   padding: 30px;
   display: flex;
   flex-direction: column;
   background: var(--white);
-  border: 1px solid #deded9;
+  border: 1px solid var(--line);
   border-radius: 30px;
-  box-shadow: 0 24px 70px rgba(11, 11, 12, .09);
+  box-shadow: 0 24px 70px rgba(23, 33, 27, .09);
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 720;
 }
 
@@ -42,7 +42,7 @@
   grid-template-columns: 78px 1fr 78px;
   align-items: center;
   gap: 8px;
-  margin: 76px 0 52px;
+  margin: 72px 0 48px;
 }
 
 .identity {
@@ -73,7 +73,7 @@
 
 .identity small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .bridge {
@@ -84,8 +84,8 @@
 }
 
 .bridge i {
-  height: 1px;
-  background: #c9caf8;
+  height: 2px;
+  background: #b7d59d;
 }
 
 .bridge svg {
@@ -94,22 +94,24 @@
 
 .eyebrow {
   color: var(--accent);
-  font: 700 9px ui-monospace, monospace;
-  letter-spacing: .13em;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -.01em;
 }
 
 .panel h1 {
   margin: 8px 0 10px;
-  font-size: 34px;
-  line-height: 1.08;
-  letter-spacing: -.055em;
+  font-size: 40px;
+  line-height: 1.04;
+  letter-spacing: -.052em;
+  font-weight: 780;
 }
 
 .explanation {
   min-height: 42px;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .securityLine {
@@ -121,7 +123,7 @@
   border: 1px solid var(--line);
   border-radius: 11px;
   color: #5e5e62;
-  font-size: 9px;
+  font-size: 13px;
 }
 
 .primary,
@@ -135,13 +137,13 @@
   border-radius: 12px;
   background: var(--ink);
   color: var(--white);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .primary:disabled { opacity: .58; }
-.secondary { color: var(--ink); background: #efefec; }
+.secondary { color: var(--ink); background: #eef2eb; }
 .success {
   min-height: 48px;
   display: flex;
@@ -151,7 +153,7 @@
   border-radius: 12px;
   background: #e7f6f0;
   color: var(--positive);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
 }
 
@@ -159,7 +161,7 @@
   margin-top: auto;
   padding-top: 26px;
   color: #949498;
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.55;
   text-align: center;
 }

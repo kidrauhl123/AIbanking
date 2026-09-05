@@ -62,15 +62,15 @@ export function ChannelSettings() {
 
   return <main className={styles.stage}><section className={styles.panel}>
     <header><Link href="/"><ArrowLeft size={17} /> 返回</Link><div><span>B</span><b>BankPilot</b></div></header>
-    <div className={styles.heading}><p>CONNECTED CHANNELS</p><h1>消息渠道</h1><span>每个外部身份都必须由你亲自在银行会话中绑定。</span></div>
-    <div className={styles.rule}><ShieldCheck size={17} /><span><b>银行权限始终优先</b><small>解绑立即生效；红色操作仍须回 BankPilot 强验证。</small></span></div>
+    <div className={styles.heading}><p>身份与授权</p><h1>消息渠道</h1><span>在 QQ 或企业微信里安全使用 BankPilot。</span></div>
+    <div className={styles.rule}><ShieldCheck size={17} /><span><b>银行权限优先</b><small>解绑立即生效，高风险操作仍需回到 App 验证。</small></span></div>
     {error && <div className={styles.error}>{error}<button onClick={load}><RefreshCw size={14} />重试</button></div>}
     <div className={styles.list}>
       {loading && <p className={styles.empty}>正在读取加密身份映射…</p>}
       {!loading && channels.length === 0 && <div className={styles.emptyState}><Link2 size={24} /><b>还没有连接渠道</b><span>在 QQ 或企业微信中与 BankPilot 机器人私聊，即可发起安全绑定。</span></div>}
       {channels.map((channel) => <article key={channel.id}>
         <div className={`${styles.channelMark} ${channel.channelType === "QQ" ? styles.qqMark : ""}`}><Image src={channel.channelType === "QQ" ? "/brands/qq.svg" : "/brands/wecom.svg"} alt="" width={22} height={22} /></div>
-        <div><b>{channel.channelType === "QQ" ? "QQ" : "企业微信"}</b><small>最近活动 {new Date(channel.lastSeenAt).toLocaleString("zh-CN")}</small><code>{channel.id.slice(0, 8)} · {channel.status}</code></div>
+        <div><b>{channel.channelType === "QQ" ? "QQ" : "企业微信"}</b><small>{new Date(channel.lastSeenAt).toLocaleString("zh-CN")}</small><code>{channel.id.slice(0, 8)} · {channel.status}</code></div>
         {channel.status === "ACTIVE" ? <button disabled={busy === channel.id} onClick={() => revoke(channel)}>{busy === channel.id ? <RefreshCw className={styles.spin} size={15} /> : <Unlink size={15} />}解绑</button> : <span className={styles.revoked}>已解绑</span>}
       </article>)}
     </div>

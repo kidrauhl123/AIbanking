@@ -177,7 +177,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise<void> 
   };
   return <main className={styles.authStage}><section className={styles.authPanel}>
     <div className={styles.authBrand}><span>B</span><b>BankPilot</b></div>
-    <div className={styles.authCopy}><p>AI-NATIVE BANKING</p><h1>{mode === "login" ? "欢迎回来" : "开立你的账户"}</h1><span>{mode === "login" ? "登录后继续管理真实生成的账户数据。" : "账户从 ¥0.00 开始，不预置任何交易或资产。"}</span></div>
+    <div className={styles.authCopy}><p>一句话，办银行业务</p><h1>{mode === "login" ? "欢迎回来" : "开立你的账户"}</h1><span>{mode === "login" ? "登录后继续管理账户与 AI 任务。" : "从零开始，所有数据都由你亲自创建。"}</span></div>
     <form onSubmit={submit} className={styles.authForm}>
       {mode === "register" && <label>姓名<input name="displayName" autoComplete="name" minLength={2} required placeholder="你的真实姓名或测试代号" /></label>}
       <label>手机号<input name="phone" autoComplete="tel" inputMode="tel" required placeholder="用于登录和收款人识别" /></label>
@@ -186,7 +186,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise<void> 
       <button className={styles.authSubmit} disabled={busy}>{busy ? "正在验证…" : mode === "login" ? "安全登录" : "注册并开户"}</button>
     </form>
     <button className={styles.modeSwitch} onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>{mode === "login" ? "还没有账户？立即注册" : "已有账户？返回登录"}</button>
-    <small className={styles.authLegal}>本项目为比赛沙箱银行，不连接真实银行账户。业务数据仅由用户操作产生。</small>
+    <small className={styles.authLegal}>比赛沙箱，不连接真实银行与清算网络。</small>
   </section></main>;
 }
 
@@ -203,14 +203,14 @@ function HomeView({ data, loading, visible, toggleVisible, outgoing, onAgent, on
       <button onClick={() => onAgent("分析本月账单")}><span><ChartNoAxesColumnIncreasing /></span>分析</button>
       <button onClick={() => onAgent("查看订阅扣费")}><span><RefreshCw /></span>订阅</button>
     </div>
-    <button className={styles.agentCallout} onClick={() => onAgent("分析本月账单")}><span className={styles.agentMark}><Sparkles size={20} /></span><span><b>问 BankPilot</b><small>用一句话查账、转账或管理卡片</small></span><ChevronRight size={18} /></button>
-    <section className={styles.section}><div className={styles.sectionHead}><div><p>本月支出</p><h2>{money(outgoing)}</h2></div><button onClick={() => onAgent("分析本月账单")}>AI 分析</button></div>{outgoing === 0 && <p className={styles.emptyCopy}>产生真实转账后，这里会形成账单分析。</p>}</section>
+    <button className={styles.agentCallout} onClick={() => onAgent("分析本月账单")}><span className={styles.agentMark}><Sparkles size={20} /></span><span><b>问 BankPilot</b><small>查账、转账、管卡，一句话就行</small></span><ChevronRight size={18} /></button>
+    <section className={styles.section}><div className={styles.sectionHead}><div><p>本月支出</p><h2>{money(outgoing)}</h2></div><button onClick={() => onAgent("分析本月账单")}>分析</button></div>{outgoing === 0 && <p className={styles.emptyCopy}>完成转账后即可查看消费分析。</p>}</section>
     <section className={styles.section}><div className={styles.sectionTitle}><h2>最近交易</h2><span>{data?.transactions.length ?? 0} 笔</span></div><TransactionList items={data?.transactions.slice(0, 4) ?? []} /></section>
   </div>;
 }
 
 function TransactionList({ items }: { items: Transaction[] }) {
-  if (!items.length) return <div className={styles.emptyState}><span>尚无流水</span><small>入金或与其他注册用户转账后，记录会出现在这里。</small></div>;
+  if (!items.length) return <div className={styles.emptyState}><span>还没有交易</span><small>入金或转账后会显示在这里。</small></div>;
   return <div className={styles.transactionList}>{items.map((item) => <div className={styles.transaction} key={item.id}>
     <span className={Number(item.amount_minor) >= 0 ? styles.txIconIn : styles.txIcon}>{Number(item.amount_minor) >= 0 ? <ArrowDownLeft size={19} /> : item.merchant_name.slice(0, 1)}</span>
     <span className={styles.txCopy}><b>{item.merchant_name}</b><small>{item.category} · {shortDate(item.occurred_at)}{item.is_anomaly && <em>需核实</em>}</small></span>
@@ -245,11 +245,11 @@ function ReplyData({ reply }: { reply: Reply }) {
 function OperationCard({ item, operation, onCommit, onCancel }: { item: ChatItem; operation: Operation; onCommit: () => void; onCancel: () => void }) {
   const done = item.state === "done";
   return <section className={`${styles.operationCard} ${done ? styles.operationDone : ""}`}>
-    <div className={styles.operationHead}><span className={styles.riskDot} data-level={operation.riskLevel} /><div><small>可验证操作凭证</small><b>{done ? "执行成功" : operation.title}</b></div>{done ? <CircleCheck size={22} /> : <span className={styles.riskTag} data-level={operation.riskLevel}>{operation.riskLevel}</span>}</div>
+    <div className={styles.operationHead}><span className={styles.riskDot} data-level={operation.riskLevel} /><div><small>银行操作单</small><b>{done ? "执行成功" : operation.title}</b></div>{done ? <CircleCheck size={22} /> : <span className={styles.riskTag} data-level={operation.riskLevel}>{operation.riskLevel === "RED" ? "红色" : operation.riskLevel === "YELLOW" ? "黄色" : "绿色"}</span>}</div>
     <div className={styles.operationAmount}>{operation.details[0]?.value}</div><dl>{operation.details.slice(1).map((detail) => <div key={detail.label}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>
     <div className={styles.operationId}><span>操作编号</span><code>{operation.operationId}</code></div>
     {done ? <div className={styles.successReceipt}><Check size={16} /><span><b>{item.receipt ? "账本已入账" : "操作已取消"}</b><small>{item.receipt?.receipt?.reference ?? "银行核心未执行这项操作"}</small></span></div> : <div className={styles.operationActions}><button className={styles.cancelOperation} disabled={item.state === "executing"} onClick={onCancel}>取消</button><button className={styles.executeButton} disabled={item.state === "executing"} onClick={onCommit}>{item.state === "executing" ? <RefreshCw className={styles.spin} size={17} /> : operation.requiredAuth === "MFA" ? <LockKeyhole size={17} /> : <ShieldCheck size={17} />}{item.state === "executing" ? "处理中" : operation.actionLabel}</button></div>}
-    {!done && <p className={styles.authorizationNote}>{operation.requiredAuth === "MFA" ? "需要验证器动态码 · 授权仅绑定本次交易" : "点击即表示你确认以上信息"}</p>}
+    {!done && <p className={styles.authorizationNote}>{operation.requiredAuth === "MFA" ? "动态码仅授权本次操作" : "请确认以上信息"}</p>}
   </section>;
 }
 
@@ -273,12 +273,12 @@ function DepositModal({ account, busy, setBusy, close, done }: { account: Accoun
       const result = await response.json(); if (!response.ok) throw new Error(result.message); await done();
     } catch (err) { setError(err instanceof Error ? err.message : "入金未完成"); } finally { setBusy(false); }
   };
-  return <ModalShell eyebrow="BANK CORE · 真实记账" title="向账户入金" close={close}><p>这会创建一笔由你发起的入金，并写入平衡的双分录账本。</p><form className={styles.actionForm} onSubmit={submit}>
+  return <ModalShell eyebrow="银行核心 · 实时记账" title="向账户入金" close={close}><p>金额将写入双分录账本。</p><form className={styles.actionForm} onSubmit={submit}>
     <label>金额（元）<input name="amount" type="number" inputMode="decimal" min="0.01" max="1000000" step="0.01" required autoFocus /></label>
     <label>资金来源<select name="source"><option value="EXTERNAL_TRANSFER">外部账户转入</option><option value="CASH">现金存入</option></select></label>
     <label>外部参考号（选填）<input name="reference" maxLength={80} /></label>{error && <div className={styles.formError}>{error}</div>}
     <button className={styles.primaryButton} disabled={busy}>{busy ? "正在记账…" : "确认入金"}</button>
-  </form><small>比赛沙箱不连接真实清算网络；此记录只代表测试者主动声明的入金。</small></ModalShell>;
+  </form><small>沙箱入金，不进入真实清算网络。</small></ModalShell>;
 }
 
 function TransferModal({ account, mfaConfigured, prepared, setPrepared, busy, setBusy, close, code, setCode, done }: { account: Account; mfaConfigured: boolean; prepared: PreparedTransfer | null; setPrepared: (value: PreparedTransfer | null) => void; busy: boolean; setBusy: (value: boolean) => void; close: () => void; code: string; setCode: (value: string) => void; done: () => Promise<void> }) {
@@ -306,7 +306,7 @@ function TransferModal({ account, mfaConfigured, prepared, setPrepared, busy, se
       const result = await response.json(); if (!response.ok) throw new Error(result.message ?? (result.error === "AUTH_INVALID" ? "动态验证码验证失败" : "执行失败")); await done();
     } catch (err) { setError(err instanceof Error ? err.message : "资金未转出"); } finally { setBusy(false); }
   };
-  return <ModalShell eyebrow={prepared ? `${prepared.riskLevel} · ${prepared.requiredAuth === "MFA" ? "强验证" : "明确确认"}` : "TRANSFER · 两阶段执行"} title={prepared ? "核对转账单据" : "发起转账"} close={close}>{!prepared ? <><p>收款人必须是已注册的 BankPilot 用户。可输入准确姓名或完整手机号。</p><form className={styles.actionForm} onSubmit={prepare}>
+  return <ModalShell eyebrow={prepared ? `${prepared.riskLevel === "RED" ? "红色风险" : "黄色风险"} · ${prepared.requiredAuth === "MFA" ? "强验证" : "用户确认"}` : "先核对，再执行"} title={prepared ? "核对转账" : "发起转账"} close={close}>{!prepared ? <><p>输入已注册用户的姓名或完整手机号。</p><form className={styles.actionForm} onSubmit={prepare}>
     <label>收款人<input name="recipient" required minLength={2} placeholder="姓名或完整手机号" autoFocus /></label><label>金额（元）<input name="amount" type="number" inputMode="decimal" min="0.01" max="1000000" step="0.01" required /></label><label>备注（选填）<input name="note" maxLength={80} /></label>{error && <div className={styles.formError}>{error}</div>}<button className={styles.primaryButton} disabled={busy}>{busy ? "正在核验…" : "继续核对"}</button>
   </form></> : <><div className={styles.transferReceipt}><strong>{money(prepared.details.amountMinor)}</strong><dl><div><dt>收款人</dt><dd>{prepared.details.recipient.name}</dd></div><div><dt>手机号</dt><dd>{prepared.details.recipient.phoneMasked}</dd></div><div><dt>付款账户</dt><dd>{prepared.details.sourceAccount.maskedNo}</dd></div><div><dt>操作编号</dt><dd>{prepared.operationId}</dd></div></dl></div>{prepared.requiredAuth === "MFA" && (mfaConfigured ? <label className={styles.reauthField}>验证器动态码<input inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="6 位动态验证码" autoComplete="one-time-code" autoFocus /></label> : <div className={styles.mfaRequired}><b>需要先启用多因素认证</b><span>此操作为红色风险，必须使用真实 TOTP 动态码。</span><a href="/security">前往安全中心设置</a></div>)}{error && <div className={styles.formError}>{error}</div>}<button className={styles.primaryButton} disabled={busy || (prepared.requiredAuth === "MFA" && (!mfaConfigured || code.length !== 6))} onClick={authorize}>{busy ? "账本处理中…" : "授权并执行"}</button><small>外部 Agent 无权点击此按钮；授权仅绑定当前操作编号。</small></>}</ModalShell>;
 }
@@ -314,15 +314,15 @@ function TransferModal({ account, mfaConfigured, prepared, setPrepared, busy, se
 function CardModal({ account, busy, setBusy, close, done }: { account: Account; busy: boolean; setBusy: (value: boolean) => void; close: () => void; done: () => Promise<void> }) {
   const [error, setError] = useState("");
   const submit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setBusy(true); const values = new FormData(event.currentTarget); try { const response = await fetch("/api/v1/cards", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountId: account.id, cardName: values.get("cardName") }) }); const result = await response.json(); if (!response.ok) throw new Error(result.message); await done(); } catch (err) { setError(err instanceof Error ? err.message : "开卡失败"); } finally { setBusy(false); } };
-  return <ModalShell eyebrow="YELLOW · 用户确认" title="申请虚拟卡" close={close}><p>虚拟卡绑定你的活期账户，默认日限额为 ¥1,000。系统只保存脱敏卡号。</p><form className={styles.actionForm} onSubmit={submit}><label>卡片名称<input name="cardName" defaultValue="日常虚拟卡" required minLength={2} maxLength={30} autoFocus /></label>{error && <div className={styles.formError}>{error}</div>}<button className={styles.primaryButton} disabled={busy}>{busy ? "正在开卡…" : "确认申请"}</button></form></ModalShell>;
+  return <ModalShell eyebrow="黄色风险 · 用户确认" title="申请虚拟卡" close={close}><p>虚拟卡绑定你的活期账户，默认日限额为 ¥1,000。系统只保存脱敏卡号。</p><form className={styles.actionForm} onSubmit={submit}><label>卡片名称<input name="cardName" defaultValue="日常虚拟卡" required minLength={2} maxLength={30} autoFocus /></label>{error && <div className={styles.formError}>{error}</div>}<button className={styles.primaryButton} disabled={busy}>{busy ? "正在开卡…" : "确认申请"}</button></form></ModalShell>;
 }
 
 function ProfileModal({ data, close, logout }: { data: Bootstrap; close: () => void; logout: () => Promise<void> }) {
-  return <ModalShell eyebrow="IDENTITY · 当前会话" title={data.customer.display_name} close={close}><div className={styles.profileRows}><div><span>手机号</span><b>{data.customer.phone}</b></div><div><span>收款识别</span><b>姓名或手机号</b></div><div><span>账户号</span><b>{data.accounts[0]?.account_no ?? "—"}</b></div></div><a className={styles.developerLink} href="/security"><ShieldCheck size={17} /><span><b>安全中心</b><small>{data.customer.mfa_configured ? "TOTP 多因素认证已启用" : "设置红色操作强验证"}</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/channels"><Link2 size={17} /><span><b>消息渠道</b><small>查看或撤销 QQ、企业微信身份绑定</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/developers"><Sparkles size={17} /><span><b>连接外部 Agent</b><small>创建范围令牌并查看 MCP 文档</small></span><ChevronRight size={17} /></a><button className={styles.logoutButton} onClick={logout}><LogOut size={17} />退出登录</button></ModalShell>;
+  return <ModalShell eyebrow="当前账户" title={data.customer.display_name} close={close}><div className={styles.profileRows}><div><span>手机号</span><b>{data.customer.phone}</b></div><div><span>收款方式</span><b>姓名或手机号</b></div><div><span>账户号</span><b>{data.accounts[0]?.account_no ?? "—"}</b></div></div><a className={styles.developerLink} href="/security"><ShieldCheck size={17} /><span><b>安全中心</b><small>{data.customer.mfa_configured ? "强验证已开启" : "设置高风险操作验证"}</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/channels"><Link2 size={17} /><span><b>消息渠道</b><small>QQ 与企业微信</small></span><ChevronRight size={17} /></a><a className={styles.developerLink} href="/developers"><Sparkles size={17} /><span><b>外部 Agent</b><small>令牌与 MCP 接入</small></span><ChevronRight size={17} /></a><button className={styles.logoutButton} onClick={logout}><LogOut size={17} />退出登录</button></ModalShell>;
 }
 
 function ReauthModal({ code, setCode, close, submit }: { code: string; setCode: (value: string) => void; close: () => void; submit: () => void }) {
-  return <ModalShell eyebrow="RED · 强验证" title="确认是你本人" close={close}><p>输入身份验证器生成的 6 位动态码。连续失败 3 次后，此操作将安全熔断。</p><input className={styles.codeInput} inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="6 位动态验证码" autoComplete="one-time-code" autoFocus /><button className={styles.primaryButton} disabled={code.length !== 6} onClick={submit}><LockKeyhole size={17} />验证并执行</button><small>动态码只用于本次操作验证，不会写入 Agent 上下文或审计明文。</small></ModalShell>;
+  return <ModalShell eyebrow="红色风险 · 强验证" title="确认是你本人" close={close}><p>输入身份验证器生成的 6 位动态码。连续失败 3 次后，此操作将安全熔断。</p><input className={styles.codeInput} inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="6 位动态验证码" autoComplete="one-time-code" autoFocus /><button className={styles.primaryButton} disabled={code.length !== 6} onClick={submit}><LockKeyhole size={17} />验证并执行</button><small>动态码只用于本次操作验证，不会写入 Agent 上下文或审计明文。</small></ModalShell>;
 }
 
 function CardsView({ data, onAgent, onCreate, onLocked }: { data: Bootstrap | null; onAgent: (text: string) => void; onCreate: () => void; onLocked: () => Promise<void> }) {

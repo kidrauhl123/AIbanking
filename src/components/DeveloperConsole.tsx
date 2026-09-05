@@ -34,7 +34,7 @@ export function DeveloperConsole() {
   const copy = (value: string) => navigator.clipboard.writeText(value);
 
   return <main className={styles.page}><header><Link href="/"><ArrowLeft size={17} />返回银行</Link><div><span>B</span><b>Agent 接入中心</b></div><a href="/api/openapi" target="_blank">OpenAPI <ExternalLink size={13} /></a></header>
-    <section className={styles.hero}><p>CONTROLLED ACCESS</p><h1>你的 Agent，<br />只拿到必要权限。</h1><span>每个令牌绑定当前银行用户、明确权限和 30 天有效期。MCP 可以查询和创建转账草稿，但不能执行扣款。</span></section>
+    <section className={styles.hero}><p>最小权限接入</p><h1>你的 Agent，<br />只拿必要权限。</h1><span>令牌绑定用户、权限与有效期。MCP 可查询和创建草稿，但不能执行扣款。</span></section>
     <div className={styles.grid}><section className={styles.panel}><div className={styles.panelHead}><KeyRound size={18} /><div><b>创建个人访问令牌</b><span>密码复核后仅展示一次</span></div></div><form onSubmit={create}>
       <label>Agent 名称<input name="name" required minLength={2} maxLength={60} placeholder="例如：我的 Claude Desktop" /></label>
       <fieldset><legend>授权范围</legend>{availableScopes.map(([scope, label]) => <label className={styles.scope} key={scope}><input type="checkbox" name={scope} defaultChecked={scope.endsWith(":read")} /><span><b>{label}</b><code>{scope}</code></span></label>)}</fieldset>

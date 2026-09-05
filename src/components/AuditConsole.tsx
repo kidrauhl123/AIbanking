@@ -27,7 +27,7 @@ export function AuditConsole() {
 
   return <main className={styles.page}>
     <header className={styles.header}><Link href="/"><ArrowLeft size={18} />返回 BankPilot</Link><div><span>B</span><b>安全审计台</b></div><button onClick={load}><RefreshCw size={16} />刷新</button></header>
-    <section className={styles.hero}><div><p>CONTROL PLANE / READ ONLY</p><h1>每一步，均可解释。</h1><span>Agent 计划、权限裁决、工具调用与核心账本结果统一留痕。</span></div><div className={styles.health}><i /><span><b>所有系统正常</b><small>PostgreSQL · Policy Engine · Ledger</small></span></div></section>
+    <section className={styles.hero}><div><p>只读安全审计</p><h1>每一步，都可解释。</h1><span>计划、权限、工具调用和账本结果，全程留痕。</span></div><div className={styles.health}><i /><span><b>所有系统正常</b><small>PostgreSQL · Policy Engine · Ledger</small></span></div></section>
     {error && <div className={styles.error}>{error}</div>}
     <div className={styles.grid}>
       <aside className={styles.tasks}><div className={styles.panelTitle}><span>最近 Agent 任务</span><small>{data?.tasks.length ?? 0} TASKS</small></div>{data?.tasks.map((item) => <button className={selected === item.id ? styles.selected : ""} key={item.id} onClick={() => setSelected(item.id)}><span className={styles.level} data-level={item.risk_level} /><span><b>{item.user_utterance}</b><small>{item.intent} · {new Date(item.created_at).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</small></span><ChevronRight size={15} /></button>)}</aside>
