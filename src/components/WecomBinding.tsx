@@ -1,13 +1,19 @@
 "use client";
 
 import { ArrowRight, Check, Link2, LockKeyhole, RotateCw } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import styles from "./WecomBinding.module.css";
 
 type State = "LOADING" | "SIGNED_OUT" | "READY" | "BINDING" | "DONE" | "ERROR";
 
-export function WecomBinding() {
+type ChannelBindingProps = { channelType: "WECOM" | "QQ" };
+
+export function ChannelBinding({ channelType }: ChannelBindingProps) {
+  const isQq = channelType === "QQ";
+  const channelName = isQq ? "QQ" : "企业微信";
+  const channelPath = isQq ? "qq" : "wecom";
   const hash = useSyncExternalStore(
     (onChange) => { window.addEventListener("hashchange", onChange); return () => window.removeEventListener("hashchange", onChange); },
     () => window.location.hash,
@@ -20,15 +26,15 @@ export function WecomBinding() {
   const message = actionMessage || (state === "LOADING"
     ? "正在检查安全绑定…"
     : state === "READY"
-      ? "确认后，企业微信中的你将与当前 BankPilot 账户关联。"
-      : "绑定链接不完整，请回到企业微信重新获取。");
+      ? `确认后，${channelName}中的你将与当前 BankPilot 账户关联。`
+      : `绑定链接不完整，请回到${channelName}重新获取。`);
 
   const bind = useCallback(async () => {
     if (!token) return;
     setActionState("BINDING");
     setActionMessage("正在建立加密身份映射…");
     try {
-      const response = await fetch("/api/channels/wecom/bind/complete", {
+      const response = await fetch(`/api/channels/${channelPath}/bind/complete`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ token }),
@@ -40,14 +46,14 @@ export function WecomBinding() {
         return;
       }
       if (!response.ok) throw new Error(result.message ?? "绑定失败");
-      history.replaceState(null, "", "/connect/wecom");
+      history.replaceState(null, "", `/connect/${channelPath}`);
       setActionState("DONE");
-      setActionMessage("身份绑定完成。现在可以回企业微信继续刚才的银行请求。");
+      setActionMessage(`身份绑定完成。现在可以回${channelName}继续刚才的银行请求。`);
     } catch (error) {
       setActionState("ERROR");
       setActionMessage(error instanceof Error ? error.message : "绑定没有完成，请重新获取链接。");
     }
-  }, [token]);
+  }, [channelName, channelPath, token]);
 
   useEffect(() => {
     const retry = () => {
@@ -63,7 +69,7 @@ export function WecomBinding() {
         <header className={styles.brand}><span>B</span> BankPilot</header>
 
         <div className={styles.identityBridge} aria-hidden="true">
-          <div className={styles.identity}><span>企</span><small>企业微信</small></div>
+          <div className={styles.identity}><span className={isQq ? styles.qqMark : undefined}><Image src={isQq ? "/brands/qq.svg" : "/brands/wecom.svg"} alt="" width={isQq ? 34 : 38} height={34} /></span><small>{channelName}</small></div>
           <div className={styles.bridge}><i /><Link2 size={17} /><i /></div>
           <div className={styles.identity}><span className={styles.bankMark}>B</span><small>银行账户</small></div>
         </div>
@@ -87,14 +93,22 @@ export function WecomBinding() {
           <Link className={styles.primary} href="/" target="_blank" rel="noopener">新窗口登录 BankPilot <ArrowRight size={16} /></Link>
         )}
         {state === "DONE" && (
-          <div className={styles.success}><Check size={18} /> 企业微信已获得受控入口</div>
+          <div className={styles.success}><Check size={18} /> {channelName}已获得受控入口</div>
         )}
         {state === "ERROR" && (
           <Link className={styles.secondary} href="/">返回 BankPilot</Link>
         )}
 
-        <footer>企业微信不能绕过 BankPilot 的确认与强验证规则。</footer>
+        <footer>{channelName}不能绕过 BankPilot 的确认与强验证规则。</footer>
       </section>
     </main>
   );
+}
+
+export function WecomBinding() {
+  return <ChannelBinding channelType="WECOM" />;
+}
+
+export function QqBinding() {
+  return <ChannelBinding channelType="QQ" />;
 }

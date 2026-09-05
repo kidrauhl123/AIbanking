@@ -5,10 +5,10 @@
 BankPilot 将“会聊天的模型”和“能改变资金状态的银行核心”严格分开。LLM 只能提出结构化意图与计划；确定性的策略引擎决定风险；只有银行核心能在数据库事务中执行操作。
 
 ```text
-PWA ─ Session ───────┐
-企业微信 ─ WS Worker ├─ LangGraph Runtime ── intent nodes ── interrupt()
-                     │         │                         │
-外部 Agent ─ MCP ────┘         │ checkpoints             │ resume
+PWA ─ Session ─────────┐
+QQ / 企业微信 ─ Worker ├─ LangGraph Runtime ── intent nodes ── interrupt()
+                       │         │                         │
+外部 Agent ─ MCP ──────┘         │ checkpoints             │ resume
                                ▼                         ▼
                          PostgreSQL ◀──── Policy + Authorization Gateway
                                ▲                  │ confirm / TOTP
@@ -28,11 +28,11 @@ Next.js App Router + React。支持注册、登录、账户、流水、入金、
 
 模型采用两次受约束调用：第一次输出通过 Zod 校验的意图、实体和步骤；银行工具返回事实后，第二次只能根据 `BANK_FACTS` 生成说明。模型不能生成 SQL、调用任意 URL 或直接提交账本。重复授权由 runtime 原子抢占，只有一个请求能从 `INTERRUPTED` 进入 `RUNNING`。
 
-### 企业微信 Channel Adapter
+### 腾讯消息 Channel Adapters
 
-独立 Node.js Worker 使用企业微信官方智能机器人 SDK 建立 WebSocket 长连接。Worker 不接触数据库，只使用内部适配令牌调用渠道 API；Bot Secret 也不会进入 Next.js 或浏览器。首次会话发放 10 分钟一次性绑定链接，微信 userid 加密保存并以 HMAC 摘要索引。
+两个独立 Node.js Worker 分别使用 QQ 和企业微信官方 SDK 建立 WebSocket 长连接。Worker 不接触数据库，只使用各自的内部适配令牌调用渠道 API；Bot Secret 不会进入 Next.js 或浏览器。首次会话发放 10 分钟一次性绑定链接，渠道 openid/userid 加密保存并以 HMAC 摘要索引。
 
-绿色任务直接回复；黄色任务使用模板卡片确认；红色任务只发送银行 APP 深链，由银行会话和 TOTP 完成。消息按企业微信 `msgid` 去重，异步结果经事务 outbox 重试投递。
+绿色任务直接回复；黄色任务使用原生按钮确认；红色任务只发送银行 APP 深链，由银行会话和 TOTP 完成。消息按平台事件 ID 去重，异步结果经按渠道隔离的事务 outbox 重试投递。QQ 群聊不进入银行 Agent，只引导用户转到 C2C 私聊，避免账户信息在群内暴露。
 
 ### MCP / REST Adapter
 

@@ -375,8 +375,9 @@ export async function resumeAgentRuntime(input: {
       summary: "LangGraph 从持久化授权节点恢复并核验银行结果",
       evidence: { runId: current.id, graphThreadId: current.graph_thread_id, approved: input.approved },
     });
-    if (current.channel_type === "WECOM" && current.channel_identity_id) {
+    if (["WECOM", "QQ"].includes(current.channel_type) && current.channel_identity_id) {
       await enqueueChannelNotification({
+        channelType: current.channel_type as "WECOM" | "QQ",
         identityId: current.channel_identity_id,
         customerId: input.customerId,
         taskId: input.taskId,

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const principal = await authenticateRequest(request);
     if (principal.kind !== "SESSION") throw new AuthError("BANK_APP_SESSION_REQUIRED", 403);
     const { token } = schema.parse(await request.json());
-    return Response.json(await completeChannelBinding(principal.customerId, token, "WECOM"));
+    return Response.json(await completeChannelBinding(principal.customerId, token, "QQ"));
   } catch (error) {
     return apiError(error, "CHANNEL_BINDING_FAILED");
   }

@@ -6,9 +6,9 @@ const schema = z.object({ limit: z.number().int().min(1).max(25).default(10) });
 
 export async function POST(request: Request) {
   try {
-    assertChannelAdapterRequest(request, "WECOM");
+    assertChannelAdapterRequest(request, "QQ");
     const { limit } = schema.parse(await request.json());
-    return Response.json({ items: await claimChannelNotifications("WECOM", limit) });
+    return Response.json({ items: await claimChannelNotifications("QQ", limit) });
   } catch (error) {
     return apiError(error, "OUTBOX_CLAIM_FAILED");
   }

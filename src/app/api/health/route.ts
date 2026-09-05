@@ -18,7 +18,10 @@ export async function GET() {
       agentRuntime: readiness.rows[0]?.checkpoints_ready
         ? "ready"
         : readiness.rows[0]?.migration_applied ? "initializes_on_first_run" : "migration_required",
-      channels: { wecomAdapter: Boolean(process.env.WECOM_ADAPTER_TOKEN && process.env.BANKPILOT_PUBLIC_URL) },
+      channels: {
+        wecomInternalApi: Boolean(process.env.WECOM_ADAPTER_TOKEN && process.env.BANKPILOT_PUBLIC_URL),
+        qqInternalApi: Boolean(process.env.QQ_ADAPTER_TOKEN && process.env.BANKPILOT_PUBLIC_URL),
+      },
     });
   } catch {
     return NextResponse.json({ status: "degraded", database: "unavailable" }, { status: 503 });

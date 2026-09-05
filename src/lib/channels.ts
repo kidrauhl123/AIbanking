@@ -11,8 +11,8 @@ import { AuthError } from "./auth";
 import { query, withTransaction } from "./db";
 import { writeAudit } from "./audit";
 
-export type ChannelType = "WECOM";
-export type AgentChannel = "PWA" | "WECOM" | "MCP";
+export type ChannelType = "WECOM" | "QQ";
+export type AgentChannel = "PWA" | ChannelType | "MCP";
 
 const BINDING_TTL_MS = 10 * 60 * 1000;
 
@@ -82,7 +82,7 @@ export async function createChannelBindingToken(input: {
   };
 }
 
-export async function completeChannelBinding(customerId: string, token: string) {
+export async function completeChannelBinding(customerId: string, token: string, expectedChannelType?: ChannelType) {
   const [id, secret] = token.split(".");
   if (!/^[0-9a-f-]{36}$/i.test(id ?? "") || !secret) throw new Error("BINDING_TOKEN_INVALID");
   return withTransaction(async (client) => {
@@ -103,6 +103,7 @@ export async function completeChannelBinding(customerId: string, token: string) 
     if (!binding || binding.consumed_at || binding.expires_at <= new Date() || !sameHash(tokenHash(secret), binding.secret_hash)) {
       throw new Error("BINDING_TOKEN_INVALID");
     }
+    if (expectedChannelType && binding.channel_type !== expectedChannelType) throw new Error("CHANNEL_BINDING_MISMATCH");
 
     const existing = await client.query<{ id: string; customer_id: string }>(
       `SELECT id,customer_id FROM channel_identities
@@ -128,7 +129,7 @@ export async function completeChannelBinding(customerId: string, token: string) 
       customerId,
       eventType: "CHANNEL_IDENTITY_BOUND",
       actorType: "USER",
-      summary: "客户确认绑定企业微信身份",
+      summary: `客户确认绑定${binding.channel_type === "QQ" ? "QQ" : "企业微信"}身份`,
       evidence: { channelType: binding.channel_type, identityId: identity.rows[0].id },
     }, client);
     return { channelType: binding.channel_type, identityId: identity.rows[0].id, status: "ACTIVE" as const };
@@ -163,7 +164,7 @@ export async function revokeChannelIdentity(customerId: string, identityId: stri
       customerId,
       eventType: "CHANNEL_IDENTITY_REVOKED",
       actorType: "USER",
-      summary: "客户解除企业微信身份绑定",
+      summary: "客户解除外部消息渠道身份绑定",
       evidence: { identityId },
     }, client);
     return { identityId, status: "REVOKED" as const };
@@ -193,8 +194,8 @@ export async function listChannelIdentities(customerId: string) {
   }));
 }
 
-export function assertChannelAdapterRequest(request: Request) {
-  const expected = process.env.WECOM_ADAPTER_TOKEN;
+export function assertChannelAdapterRequest(request: Request, channelType: ChannelType) {
+  const expected = process.env[`${channelType}_ADAPTER_TOKEN`];
   if (!expected) throw new AuthError("CHANNEL_ADAPTER_NOT_CONFIGURED", 503);
   const actual = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
   const actualBuffer = Buffer.from(actual);
@@ -235,6 +236,7 @@ export async function recordChannelEvent(input: {
 }
 
 export async function enqueueChannelNotification(input: {
+  channelType: ChannelType;
   identityId: string;
   customerId: string;
   taskId?: string | null;
@@ -244,13 +246,13 @@ export async function enqueueChannelNotification(input: {
   await query(
     `INSERT INTO channel_outbox
       (channel_identity_id,customer_id,task_id,channel_type,dedupe_key,payload)
-     VALUES ($1,$2,$3,'WECOM',$4,$5::jsonb)
+     VALUES ($1,$2,$3,$4,$5,$6::jsonb)
      ON CONFLICT (dedupe_key) DO NOTHING`,
-    [input.identityId, input.customerId, input.taskId ?? null, input.dedupeKey, JSON.stringify(input.payload)],
+    [input.identityId, input.customerId, input.taskId ?? null, input.channelType, input.dedupeKey, JSON.stringify(input.payload)],
   );
 }
 
-export async function claimChannelNotifications(limit = 10) {
+export async function claimChannelNotifications(channelType: ChannelType, limit = 10) {
   return withTransaction(async (client) => {
     const result = await client.query<{
       id: string;
@@ -260,18 +262,18 @@ export async function claimChannelNotifications(limit = 10) {
     }>(
       `WITH candidates AS (
          SELECT o.id FROM channel_outbox o
-         WHERE o.channel_type='WECOM'
+         WHERE o.channel_type=$1
            AND o.available_at<=now()
            AND (o.status IN ('PENDING','FAILED') OR (o.status='SENDING' AND o.claimed_at<now()-interval '2 minutes'))
            AND o.attempts<8
          ORDER BY o.created_at
-         FOR UPDATE SKIP LOCKED LIMIT $1
+         FOR UPDATE SKIP LOCKED LIMIT $2
        )
        UPDATE channel_outbox o SET status='SENDING',claimed_at=now(),attempts=attempts+1
        FROM candidates c,channel_identities i
        WHERE o.id=c.id AND i.id=o.channel_identity_id AND i.status='ACTIVE'
        RETURNING o.id,i.subject_ciphertext,o.task_id,o.payload`,
-      [Math.min(Math.max(limit, 1), 25)],
+      [channelType, Math.min(Math.max(limit, 1), 25)],
     );
     return result.rows.map((row) => ({
       id: row.id,
@@ -282,12 +284,12 @@ export async function claimChannelNotifications(limit = 10) {
   });
 }
 
-export async function acknowledgeChannelNotification(id: string, delivered: boolean, error?: string) {
+export async function acknowledgeChannelNotification(channelType: ChannelType, id: string, delivered: boolean, error?: string) {
   const result = await query(
     `UPDATE channel_outbox SET status=$2,sent_at=CASE WHEN $2='SENT' THEN now() ELSE sent_at END,
      available_at=CASE WHEN $2='FAILED' THEN now()+interval '30 seconds' ELSE available_at END,
-     claimed_at=NULL,last_error=$3 WHERE id=$1 AND status='SENDING' RETURNING id`,
-    [id, delivered ? "SENT" : "FAILED", error?.slice(0, 300) ?? null],
+     claimed_at=NULL,last_error=$3 WHERE id=$1 AND channel_type=$4 AND status='SENDING' RETURNING id`,
+    [id, delivered ? "SENT" : "FAILED", error?.slice(0, 300) ?? null, channelType],
   );
   if (!result.rowCount) throw new Error("OUTBOX_ITEM_NOT_FOUND");
 }

@@ -91,8 +91,9 @@ function publicMessage(code: string) {
     OPERATION_TYPE_NOT_SUPPORTED: "该操作暂不支持通过此渠道执行",
     RESOURCE_REQUIRED: "操作信息不完整，请重新发起",
     BINDING_TOKEN_INVALID: "绑定链接无效、已使用或已过期",
-    CHANNEL_ALREADY_BOUND: "该企业微信身份已绑定其他账户",
-    CHANNEL_IDENTITY_NOT_FOUND: "企业微信身份尚未绑定或已解绑",
+    CHANNEL_ALREADY_BOUND: "该渠道身份已绑定其他账户",
+    CHANNEL_IDENTITY_NOT_FOUND: "渠道身份尚未绑定或已解绑",
+    CHANNEL_BINDING_MISMATCH: "绑定链接与当前消息渠道不匹配",
     OUTBOX_ITEM_NOT_FOUND: "消息投递任务不存在或已处理",
     PUBLIC_URL_NOT_CONFIGURED: "服务器尚未配置可信公网地址",
   };

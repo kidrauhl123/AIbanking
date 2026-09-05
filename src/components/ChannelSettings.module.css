@@ -12,7 +12,8 @@
 .rule > span { display: flex; flex-direction: column; gap: 3px; }.rule b { font-size: 10px; }.rule small { color: #6d6f92; font-size: 8px; line-height: 1.45; }
 .list { margin-top: 20px; border-top: 1px solid var(--line); }
 .list article { min-height: 88px; display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 11px; border-bottom: 1px solid var(--line); }
-.channelMark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #e9f7ee; color: #148548; }
+.channelMark { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #f3f5f8; }
+.channelMark.qqMark { background: #eef8ff; }
 .list article > div:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 4px; }.list article b { font-size: 11px; }.list article small { color: var(--muted); font-size: 8px; }.list article code { color: #8b8b90; font: 7px ui-monospace, monospace; }
 .list article button { border: 1px solid #efcccc; background: #fff5f5; color: var(--danger); border-radius: 9px; padding: 8px 9px; display: flex; align-items: center; gap: 5px; font-size: 9px; cursor: pointer; }.list article button:disabled { opacity: .55; }
 .revoked { color: var(--muted); font-size: 9px; }.empty { padding: 45px 0; text-align: center; color: var(--muted); font-size: 10px; }

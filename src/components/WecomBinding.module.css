@@ -57,8 +57,7 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: #e9f7ee;
-  color: #148548;
+  background: #f3f5f8;
   font-size: 18px;
   font-weight: 780;
 }
@@ -66,6 +65,10 @@
 .identity > .bankMark {
   background: var(--ink);
   color: var(--white);
+}
+
+.identity > .qqMark {
+  background: #eef8ff;
 }
 
 .identity small {

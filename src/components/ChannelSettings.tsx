@@ -1,13 +1,14 @@
 "use client";
 
-import { ArrowLeft, Building2, Check, Link2, RefreshCw, ShieldCheck, Unlink } from "lucide-react";
+import { ArrowLeft, Check, Link2, RefreshCw, ShieldCheck, Unlink } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import styles from "./ChannelSettings.module.css";
 
 type Channel = {
   id: string;
-  channelType: "WECOM";
+  channelType: "WECOM" | "QQ";
   status: "ACTIVE" | "REVOKED";
   boundAt: string;
   lastSeenAt: string;
@@ -40,7 +41,8 @@ export function ChannelSettings() {
   }, [load]);
 
   const revoke = async (channel: Channel) => {
-    if (!window.confirm("确认解除这个企业微信身份？解除后该渠道不能再访问银行账户。")) return;
+    const channelName = channel.channelType === "QQ" ? "QQ" : "企业微信";
+    if (!window.confirm(`确认解除这个${channelName}身份？解除后该渠道不能再访问银行账户。`)) return;
     setBusy(channel.id);
     try {
       const response = await fetch("/api/v1/channels", {
@@ -65,13 +67,13 @@ export function ChannelSettings() {
     {error && <div className={styles.error}>{error}<button onClick={load}><RefreshCw size={14} />重试</button></div>}
     <div className={styles.list}>
       {loading && <p className={styles.empty}>正在读取加密身份映射…</p>}
-      {!loading && channels.length === 0 && <div className={styles.emptyState}><Link2 size={24} /><b>还没有连接渠道</b><span>在企业微信中与 BankPilot 机器人对话，即可发起安全绑定。</span></div>}
+      {!loading && channels.length === 0 && <div className={styles.emptyState}><Link2 size={24} /><b>还没有连接渠道</b><span>在 QQ 或企业微信中与 BankPilot 机器人私聊，即可发起安全绑定。</span></div>}
       {channels.map((channel) => <article key={channel.id}>
-        <div className={styles.channelMark}><Building2 size={19} /></div>
-        <div><b>企业微信</b><small>最近活动 {new Date(channel.lastSeenAt).toLocaleString("zh-CN")}</small><code>{channel.id.slice(0, 8)} · {channel.status}</code></div>
+        <div className={`${styles.channelMark} ${channel.channelType === "QQ" ? styles.qqMark : ""}`}><Image src={channel.channelType === "QQ" ? "/brands/qq.svg" : "/brands/wecom.svg"} alt="" width={22} height={22} /></div>
+        <div><b>{channel.channelType === "QQ" ? "QQ" : "企业微信"}</b><small>最近活动 {new Date(channel.lastSeenAt).toLocaleString("zh-CN")}</small><code>{channel.id.slice(0, 8)} · {channel.status}</code></div>
         {channel.status === "ACTIVE" ? <button disabled={busy === channel.id} onClick={() => revoke(channel)}>{busy === channel.id ? <RefreshCw className={styles.spin} size={15} /> : <Unlink size={15} />}解绑</button> : <span className={styles.revoked}>已解绑</span>}
       </article>)}
     </div>
-    <footer><Check size={14} /> 渠道只保存加密标识，不保存企业微信聊天内容。</footer>
+    <footer><Check size={14} /> 渠道只保存加密标识，不保存聊天内容。</footer>
   </section></main>;
 }

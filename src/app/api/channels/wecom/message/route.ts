@@ -13,7 +13,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    assertChannelAdapterRequest(request);
+    assertChannelAdapterRequest(request, "WECOM");
     return Response.json(await handleWecomMessage(schema.parse(await request.json())));
   } catch (error) {
     return apiError(error, "CHANNEL_MESSAGE_FAILED");

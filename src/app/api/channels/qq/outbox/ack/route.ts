@@ -10,9 +10,9 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
-    assertChannelAdapterRequest(request, "WECOM");
+    assertChannelAdapterRequest(request, "QQ");
     const input = schema.parse(await request.json());
-    await acknowledgeChannelNotification("WECOM", input.id, input.delivered, input.error);
+    await acknowledgeChannelNotification("QQ", input.id, input.delivered, input.error);
     return Response.json({ status: input.delivered ? "SENT" : "RETRY_SCHEDULED" });
   } catch (error) {
     return apiError(error, "OUTBOX_ACK_FAILED");

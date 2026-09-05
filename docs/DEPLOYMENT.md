@@ -7,6 +7,7 @@
 - 应用容器：`bankpilot-app`，512 MB / 1 CPU
 - PostgreSQL：`bankpilot-postgres`，512 MB / 0.75 CPU
 - 企业微信适配器：可选 profile，`bankpilot-wecom`，256 MB / 0.5 CPU
+- QQ 适配器：可选 profile，`bankpilot-qq`，256 MB / 0.5 CPU
 - 数据卷：`bankpilot_postgres`
 - 边缘代理：现有 Caddy，经 `premsir-chat_backend` 网络访问应用
 - 数据库：只在 `bankpilot_internal` 内部网络可达，不发布主机端口
@@ -23,7 +24,7 @@ openssl rand -hex 32   # 写入 PASSWORD_PEPPER；部署后不得随意更换
 
 AI 变量为空时，银行基础功能正常工作，内置助手明确显示未配置且不会输出替代回复。
 
-必须设置 `BANKPILOT_PUBLIC_URL` 为用户实际访问的 HTTPS 域名。企业微信的三个变量在取得机器人凭据前可留空，此时不要启用 `wecom` profile。
+必须设置 `BANKPILOT_PUBLIC_URL` 为用户实际访问的 HTTPS 域名。机器人变量在取得平台凭据前可留空，此时不要启用对应 profile。
 
 ## 发布
 
@@ -54,6 +55,14 @@ ssh CONTABO-jp 'cd /opt/bankpilot && \
 ssh CONTABO-jp 'cd /opt/bankpilot && \
   docker compose --env-file deploy/.env.production -f deploy/compose.production.yml \
   --profile wecom up -d --build wecom'
+```
+
+取得 QQ 机器人 AppID 与 AppSecret 后启用 QQ Worker：
+
+```bash
+ssh CONTABO-jp 'cd /opt/bankpilot && \
+  docker compose --env-file deploy/.env.production -f deploy/compose.production.yml \
+  --profile qq up -d --build qq'
 ```
 
 迁移表 `schema_migrations` 保证 SQL 每版只执行一次。旧原型第一次应用 `002_identity_and_platform.sql` 时会删除旧版预置业务数据；之后绝不会因再次部署而重跑。

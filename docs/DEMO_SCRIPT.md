@@ -38,13 +38,15 @@
 
 未配置模型时，验收正确结果是显示“真实 AI 模型未配置”，而不是输出关键词匹配的假回复。
 
-## LangGraph 中断恢复 / 企业微信
+## LangGraph 中断恢复 / QQ 与企业微信
 
 1. 在企业微信首次发“查余额”，打开 10 分钟绑定链接并用 BankPilot 会话确认。
 2. 再次查余额，展示与 PWA 一致的真实账户事实；审计台应标记渠道 `WECOM`。
 3. 发起黄色小额转账，LangGraph 状态显示 `INTERRUPTED / CONFIRM`，资金未动。
 4. 点击模板卡片确认，Bank Core 只执行一次；runtime 恢复为 `COMPLETED`，企业微信收到核验后的最终回复。
 5. 发起红色转账，企业微信只出现 APP 深链；在 BankPilot 输入 TOTP 后执行并恢复。
+
+QQ 使用同一验收链路：先在 C2C 私聊完成绑定，黄色操作使用 QQ 原生按钮；群聊发银行请求只能收到“请私聊”提示，不能产生 Agent 任务或账户回复。
 6. 重放相同消息或重复点击卡片，验证不会产生重复模型任务或重复账本分录。
 7. 展示审计台中的模型计划、LangGraph 状态、渠道事件、策略裁决、核心结果。
 
@@ -55,7 +57,7 @@ BankPilot 是一款面向银行业务的双形态 AI 智能体 PWA：既提供�
 ## 答辩主线
 
 1. 痛点与目标：从找菜单变成说需求，但不牺牲银行控制权。
-2. 产品：PWA、企业微信、内置 Agent、外部 Agent 接入。
+2. 产品：PWA、QQ、企业微信、内置 Agent、外部 Agent 接入。
 3. 架构：LLM → Schema → LangGraph DAG → interrupt → Policy/Authorization → Core → verified reply。
 4. 安全：权限分级、TOTP、注入隔离、熔断、审计、双分录。
 5. 真实性：没有预置业务数据；无可靠理财来源就返回空，不编造。
