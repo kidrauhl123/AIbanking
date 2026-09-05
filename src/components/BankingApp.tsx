@@ -5,15 +5,17 @@ import {
   ChevronRight, CircleCheck, CreditCard, Eye, House, Link2, LockKeyhole,
   LogOut, Plus, RefreshCw, Send, ShieldCheck, Sparkles, X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { ServiceWorkerRegister } from "./ServiceWorkerRegister";
+import { StatementView, SubscriptionsView } from "./BankingViews";
+import type { BankStatement } from "@/lib/banking-report";
 import styles from "./BankingApp.module.css";
 
 type Account = { id: string; name: string; account_no: string; masked_no: string; account_type: string; available_balance_minor: string; currency: string; status: string };
 type Transaction = { id: string; merchant_name: string; category: string; amount_minor: string; occurred_at: string; is_anomaly: boolean };
 type Card = { id: string; card_name: string; masked_no: string; card_type: string; status: string; daily_limit_minor: string };
 type Subscription = { id: string; merchant_name: string; amount_minor: string; billing_cycle: string; next_charge_at: string; status: string };
-type Bootstrap = { customer: { display_name: string; phone: string; mfa_configured: boolean }; totalMinor: number; accounts: Account[]; transactions: Transaction[]; cards: Card[]; subscriptions: Subscription[]; ai: { configured: boolean; model: string | null } };
+type Bootstrap = { customer: { display_name: string; phone: string; mfa_configured: boolean }; totalMinor: number; accounts: Account[]; transactions: Transaction[]; cards: Card[]; subscriptions: Subscription[]; statement: BankStatement; ai: { configured: boolean; model: string | null } };
 type Operation = {
   type: "TRANSFER" | "CARD_LOCK" | "SUBSCRIPTION_CANCEL"; operationId: string; title: string;
   riskLevel: "GREEN" | "YELLOW" | "RED"; requiredAuth: "CONFIRM" | "MFA";
@@ -21,7 +23,7 @@ type Operation = {
 };
 type Reply = { taskId: string; intent: string; message: string; operation?: Operation; data?: Record<string, unknown>; suggestions?: string[]; ai?: { model: string; confidence: number } };
 type ChatItem = { id: string; role: "user" | "agent"; text: string; reply?: Reply; state?: "idle" | "executing" | "done" | "failed"; receipt?: { operationId: string; status: string; receipt?: { reference?: string }; amountMinor?: number; beneficiary?: string; card?: string } };
-type Tab = "home" | "agent" | "activity" | "cards";
+type Tab = "home" | "agent" | "activity" | "cards" | "analysis" | "subscriptions";
 
 const money = (minor: number | string) => new Intl.NumberFormat("zh-CN", { style: "currency", currency: "CNY", minimumFractionDigits: 2 }).format(Number(minor) / 100);
 const shortDate = (date: string) => new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric" }).format(new Date(date));
@@ -65,6 +67,7 @@ export function BankingApp() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(() => { if (tab !== "agent") viewportRef.current?.scrollTo({ top: 0 }); }, [tab]);
   useEffect(() => {
     if (tab !== "agent") return;
     const viewport = viewportRef.current;
@@ -128,8 +131,6 @@ export function BankingApp() {
     }
   };
 
-  const totalOutgoing = useMemo(() => data?.transactions.filter((item) => Number(item.amount_minor) < 0).reduce((sum, item) => sum + Math.abs(Number(item.amount_minor)), 0) ?? 0, [data]);
-
   if (loading && !data && !authRequired) return <main className={styles.stage}><div className={styles.splash}><span>B</span><p>正在连接银行核心</p></div></main>;
   if (authRequired) return <AuthScreen onAuthenticated={load} />;
 
@@ -146,14 +147,16 @@ export function BankingApp() {
       </header>
       {error && <div className={styles.connectionError}><span>{error}</span><button onClick={load}><RefreshCw size={15} />重试</button></div>}
       <div className={styles.viewport} ref={viewportRef}>
-        {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} outgoing={totalOutgoing} onAgent={send} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
+        {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} onAnalysis={() => setTab("analysis")} onSubscriptions={() => setTab("subscriptions")} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
         {tab === "agent" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} onCancel={cancelAgentOperation} bottomRef={bottomRef} />}
         {tab === "activity" && <ActivityView data={data} />}
-        {tab === "cards" && <CardsView data={data} onAgent={send} onCreate={() => setDialog("card")} onLocked={load} />}
+        {tab === "cards" && <CardsView data={data} onCreate={() => setDialog("card")} onLocked={load} />}
+        {tab === "analysis" && <StatementView initial={data?.statement} onBack={() => setTab("home")} />}
+        {tab === "subscriptions" && <SubscriptionsView items={data?.subscriptions ?? []} available={!!data} onBack={() => setTab("home")} onChanged={load} />}
       </div>
       {tab === "agent" && <form className={styles.composer} onSubmit={onSubmit}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="说出你想办理的业务…" aria-label="向银行 Agent 发送消息" /><button type="submit" disabled={!input.trim() || sending} aria-label="发送"><Send size={18} /></button></form>}
       <nav className={styles.nav} aria-label="主导航">
-        <NavButton active={tab === "home"} label="首页" icon={<House size={21} />} onClick={() => setTab("home")} />
+        <NavButton active={["home", "analysis", "subscriptions"].includes(tab)} label="首页" icon={<House size={21} />} onClick={() => setTab("home")} />
         <NavButton active={tab === "agent"} label="AI 助手" icon={<Sparkles size={21} />} onClick={() => setTab("agent")} />
         <NavButton active={tab === "activity"} label="明细" icon={<ChartNoAxesColumnIncreasing size={21} />} onClick={() => setTab("activity")} />
         <NavButton active={tab === "cards"} label="卡片" icon={<CreditCard size={21} />} onClick={() => setTab("cards")} />
@@ -182,7 +185,7 @@ function AuthScreen({ onAuthenticated }: { onAuthenticated: () => Promise<void> 
   };
   return <main className={styles.authStage}><section className={styles.authPanel}>
     <div className={styles.authBrand}><span>B</span><b>BankPilot</b></div>
-    <div className={styles.authCopy}><p>一句话，办银行业务</p><h1>{mode === "login" ? "欢迎回来" : "开立你的账户"}</h1><span>{mode === "login" ? "登录后继续管理账户与 AI 任务。" : "从零开始，所有数据都由你亲自创建。"}</span></div>
+    <div className={styles.authCopy}><p>账户与日常收支</p><h1>{mode === "login" ? "欢迎回来" : "开立你的账户"}</h1><span>{mode === "login" ? "登录后管理账户、转账和账单。" : "从零开始，所有数据都由你亲自创建。"}</span></div>
     <form onSubmit={submit} className={styles.authForm}>
       {mode === "register" && <label>姓名<input name="displayName" autoComplete="name" minLength={2} required placeholder="你的真实姓名或测试代号" /></label>}
       <label>手机号<input name="phone" autoComplete="tel" inputMode="tel" required placeholder="用于登录和收款人识别" /></label>
@@ -199,17 +202,16 @@ function NavButton({ active, label, icon, onClick }: { active: boolean; label: s
   return <button className={active ? styles.navActive : ""} onClick={onClick}>{icon}<span>{label}</span></button>;
 }
 
-function HomeView({ data, loading, visible, toggleVisible, outgoing, onAgent, onDeposit, onTransfer }: { data: Bootstrap | null; loading: boolean; visible: boolean; toggleVisible: () => void; outgoing: number; onAgent: (text: string) => void; onDeposit: () => void; onTransfer: () => void }) {
+function HomeView({ data, loading, visible, toggleVisible, onAnalysis, onSubscriptions, onDeposit, onTransfer }: { data: Bootstrap | null; loading: boolean; visible: boolean; toggleVisible: () => void; onAnalysis: () => void; onSubscriptions: () => void; onDeposit: () => void; onTransfer: () => void }) {
   return <div className={styles.home}>
     <section className={styles.balanceBlock}><div className={styles.labelRow}><span>总资产</span><button onClick={toggleVisible} aria-label="隐藏或显示余额"><Eye size={16} /></button></div><div className={styles.balance}>{loading ? "—" : visible ? money(data?.totalMinor ?? 0) : "••••••"}</div><div className={styles.balanceMeta}><span>可用余额</span><span>{data?.accounts[0]?.masked_no ?? "账户未就绪"}</span></div></section>
     <div className={styles.quickActions}>
       <button onClick={onTransfer}><span><ArrowUpRight /></span>转账</button>
       <button onClick={onDeposit}><span><Plus /></span>入金</button>
-      <button onClick={() => onAgent("分析本月账单")}><span><ChartNoAxesColumnIncreasing /></span>分析</button>
-      <button onClick={() => onAgent("查看订阅扣费")}><span><RefreshCw /></span>订阅</button>
+      <button onClick={onAnalysis}><span><ChartNoAxesColumnIncreasing /></span>分析</button>
+      <button onClick={onSubscriptions}><span><RefreshCw /></span>订阅</button>
     </div>
-    <button className={styles.agentCallout} onClick={() => onAgent("分析本月账单")}><span className={styles.agentMark}><Sparkles size={20} /></span><span><b>问 BankPilot</b><small>查账、转账、管卡，一句话就行</small></span><ChevronRight size={18} /></button>
-    <section className={styles.section}><div className={styles.sectionHead}><div><p>本月支出</p><h2>{money(outgoing)}</h2></div><button onClick={() => onAgent("分析本月账单")}>分析</button></div>{outgoing === 0 && <p className={styles.emptyCopy}>完成转账后即可查看消费分析。</p>}</section>
+    <section className={styles.section}><div className={styles.sectionHead}><div><p>本月支出与转出</p><h2>{data ? money(data.statement.expenseMinor) : "—"}</h2></div><button onClick={onAnalysis}>分析</button></div>{data?.statement.expenseMinor === 0 && <p className={styles.emptyCopy}>本月还没有支出记录。</p>}</section>
     <section className={styles.section}><div className={styles.sectionTitle}><h2>最近交易</h2><span>{data?.transactions.length ?? 0} 笔</span></div><TransactionList items={data?.transactions.slice(0, 4) ?? []} /></section>
   </div>;
 }
@@ -259,7 +261,9 @@ function OperationCard({ item, operation, onCommit, onCancel }: { item: ChatItem
 }
 
 function ActivityView({ data }: { data: Bootstrap | null }) {
-  return <div className={styles.listView}><div className={styles.viewHeading}><p>所有明细</p><h1>账户活动</h1></div><div className={styles.filterPills}><button className={styles.selected}>全部</button><button>支出</button><button>收入</button><button>异常</button></div><section className={styles.section}><TransactionList items={data?.transactions ?? []} /></section></div>;
+  const [filter, setFilter] = useState("全部");
+  const items = (data?.transactions ?? []).filter((item) => filter === "全部" || (filter === "支出" && Number(item.amount_minor) < 0) || (filter === "收入" && Number(item.amount_minor) > 0) || (filter === "异常" && item.is_anomaly));
+  return <div className={styles.listView}><div className={styles.viewHeading}><p>最近 50 笔交易</p><h1>账户活动</h1></div><div className={styles.filterPills}>{["全部", "支出", "收入", "异常"].map((label) => <button key={label} aria-pressed={filter === label} className={filter === label ? styles.selected : undefined} onClick={() => setFilter(label)}>{label}</button>)}</div><section className={styles.section}>{items.length ? <TransactionList items={items} /> : <p className={styles.emptyCopy}>没有符合条件的交易。</p>}</section></div>;
 }
 
 function ModalShell({ title, eyebrow, close, children }: { title: string; eyebrow: string; close: () => void; children: React.ReactNode }) {
@@ -330,11 +334,11 @@ function ReauthModal({ code, setCode, close, submit }: { code: string; setCode: 
   return <ModalShell eyebrow="红色风险 · 强验证" title="确认是你本人" close={close}><p>输入身份验证器生成的 6 位动态码。连续失败 3 次后，此操作将安全熔断。</p><input className={styles.codeInput} inputMode="numeric" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="6 位动态验证码" autoComplete="one-time-code" autoFocus /><button className={styles.primaryButton} disabled={code.length !== 6} onClick={submit}><LockKeyhole size={17} />验证并执行</button><small>动态码只用于本次操作验证，不会写入 Agent 上下文或审计明文。</small></ModalShell>;
 }
 
-function CardsView({ data, onAgent, onCreate, onLocked }: { data: Bootstrap | null; onAgent: (text: string) => void; onCreate: () => void; onLocked: () => Promise<void> }) {
+function CardsView({ data, onCreate, onLocked }: { data: Bootstrap | null; onCreate: () => void; onLocked: () => Promise<void> }) {
   const lock = async (card: Card) => {
     if (!window.confirm(`确认锁定 ${card.card_name} ${card.masked_no}？锁定后将暂停交易。`)) return;
     const response = await fetch(`/api/v1/cards/${card.id}/lock`, { method: "POST" });
     if (!response.ok) alert((await response.json()).message ?? "操作失败"); else await onLocked();
   };
-  return <div className={styles.listView}><div className={styles.viewHeading}><p>卡片与限额</p><h1>我的卡</h1></div>{!data?.cards.length && <div className={styles.largeEmpty}><CreditCard size={28} /><b>还没有卡片</b><span>确认申请后，银行核心将实时签发一张虚拟卡。</span></div>}{data?.cards.map((card, index) => <section className={`${styles.bankCard} ${index === 1 ? styles.bankCardLight : ""}`} key={card.id}><div><span>B</span><small>{card.card_type === "VIRTUAL" ? "VIRTUAL" : "DEBIT"}</small></div><strong>{card.card_name}</strong><p>{card.masked_no}</p><footer><span>{card.status === "ACTIVE" ? "可用" : "已锁定"}</span><span>日限额 {money(card.daily_limit_minor)}</span></footer>{card.status === "ACTIVE" && <button className={styles.cardLock} onClick={() => lock(card)}>锁定</button>}</section>)}<button className={styles.outlineAction} onClick={onCreate}><Plus size={18} />申请虚拟卡<ChevronRight size={17} /></button>{Boolean(data?.cards.length) && <button className={styles.textAction} onClick={() => onAgent("管理我的卡片")}>通过 AI 管理已有卡片</button>}</div>;
+  return <div className={styles.listView}><div className={styles.viewHeading}><p>卡片与限额</p><h1>我的卡</h1></div>{!data?.cards.length && <div className={styles.largeEmpty}><CreditCard size={28} /><b>还没有卡片</b><span>确认申请后，银行核心将实时签发一张虚拟卡。</span></div>}{data?.cards.map((card, index) => <section className={`${styles.bankCard} ${index === 1 ? styles.bankCardLight : ""}`} key={card.id}><div><span>B</span><small>{card.card_type === "VIRTUAL" ? "VIRTUAL" : "DEBIT"}</small></div><strong>{card.card_name}</strong><p>{card.masked_no}</p><footer><span>{card.status === "ACTIVE" ? "可用" : "已锁定"}</span><span>日限额 {money(card.daily_limit_minor)}</span></footer>{card.status === "ACTIVE" && <button className={styles.cardLock} onClick={() => lock(card)}>锁定</button>}</section>)}<button className={styles.outlineAction} onClick={onCreate}><Plus size={18} />申请虚拟卡<ChevronRight size={17} /></button></div>;
 }

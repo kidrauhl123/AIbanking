@@ -4,9 +4,10 @@ import { query, withTransaction } from "./db";
 import { evaluateTransferRisk } from "./policy";
 import { verifyCustomerTotp } from "./auth";
 import { writeAudit } from "./audit";
+import { getBankStatement } from "./bank-statements";
 
 export async function getBankingOverview(customerId: string) {
-  const [customer, accounts, transactions, cards, subscriptions] = await Promise.all([
+  const [customer, accounts, transactions, cards, subscriptions, statement] = await Promise.all([
     query<{ id: string; display_name: string; phone: string; risk_profile: string; mfa_configured: boolean }>(
       `SELECT c.id,c.display_name,c.phone,c.risk_profile,(m.enabled_at IS NOT NULL) AS mfa_configured
        FROM customers c LEFT JOIN mfa_totp m ON m.customer_id=c.id WHERE c.id=$1 AND c.status='ACTIVE'`,
@@ -33,10 +34,28 @@ export async function getBankingOverview(customerId: string) {
        FROM subscriptions WHERE customer_id=$1 ORDER BY next_charge_at`,
       [customerId],
     ),
+    getBankStatement(customerId),
   ]);
   if (!customer.rows[0]) throw new Error("CUSTOMER_UNAVAILABLE");
   const totalMinor = accounts.rows.reduce((sum, row) => sum + Number(row.available_balance_minor), 0);
-  return { customer: customer.rows[0], totalMinor, accounts: accounts.rows, transactions: transactions.rows, cards: cards.rows, subscriptions: subscriptions.rows };
+  return { customer: customer.rows[0], totalMinor, accounts: accounts.rows, transactions: transactions.rows, cards: cards.rows, subscriptions: subscriptions.rows, statement };
+}
+
+export async function blockSubscription(customerId: string, subscriptionId: string) {
+  return withTransaction(async (client) => {
+    const result = await client.query<{ id: string; status: string; merchant_name: string }>(
+      "SELECT id,status,merchant_name FROM subscriptions WHERE id=$1 AND customer_id=$2 FOR UPDATE",
+      [subscriptionId, customerId],
+    );
+    const subscription = result.rows[0];
+    if (!subscription) throw new Error("SUBSCRIPTION_NOT_FOUND");
+    if (subscription.status === "BLOCKED") return { id: subscriptionId, status: "BLOCKED", alreadyExecuted: true };
+    if (subscription.status !== "ACTIVE") throw new Error("SUBSCRIPTION_NOT_ACTIVE");
+    await client.query("UPDATE subscriptions SET status='BLOCKED' WHERE id=$1 AND customer_id=$2", [subscriptionId, customerId]);
+    await writeAudit({ customerId, eventType: "SUBSCRIPTION_BLOCKED", actorType: "USER",
+      summary: "客户在银行页面确认停止订阅代扣", evidence: { subscriptionId, merchant: subscription.merchant_name, riskLevel: "YELLOW", merchantSubscriptionCancelled: false } }, client);
+    return { id: subscriptionId, status: "BLOCKED", alreadyExecuted: false };
+  });
 }
 
 async function ensureClearingAccount(client: PoolClient) {

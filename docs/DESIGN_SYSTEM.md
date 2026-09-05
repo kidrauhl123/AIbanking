@@ -22,6 +22,14 @@ Wise's proprietary font, logo, or exact brand palette.
 
 ## Product writing
 
+- Banking and Agent are separate user flows. Banking buttons open their own screens
+  and call authenticated banking APIs directly; they must never send a hidden prompt
+  or switch to chat. Only the dedicated AI Assistant tab starts a conversation.
+- Statements aggregate the complete calendar month in Asia/Shanghai, independent
+  of the recent-transactions list. Unavailable data must not appear as zero activity.
+- Stopping a bank debit is not cancelling the merchant's subscription; label both
+  the confirmation and resulting state accordingly.
+
 - Lead with the action or outcome.
 - Remove implementation detail unless it changes the user's decision.
 - Show recipient, amount, fee/risk, and authorization state before execution.

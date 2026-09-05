@@ -7,6 +7,10 @@ export function apiError(error: unknown, fallback = "REQUEST_FAILED") {
   }
   const code = error instanceof Error ? error.message : fallback;
   const knownStatus: Record<string, number> = {
+    INVALID_STATEMENT_MONTH: 400,
+    CONFIRMATION_REQUIRED: 400,
+    SUBSCRIPTION_NOT_FOUND: 404,
+    SUBSCRIPTION_NOT_ACTIVE: 409,
     ACCOUNT_NOT_FOUND: 404,
     RECIPIENT_NOT_FOUND: 404,
     RECIPIENT_AMBIGUOUS: 409,
@@ -68,6 +72,10 @@ function authMessage(code: string) {
 
 function publicMessage(code: string) {
   const messages: Record<string, string> = {
+    INVALID_STATEMENT_MONTH: "请选择有效的账单月份",
+    CONFIRMATION_REQUIRED: "请先确认操作详情",
+    SUBSCRIPTION_NOT_FOUND: "没有找到这项订阅",
+    SUBSCRIPTION_NOT_ACTIVE: "这项订阅当前不能停止代扣，请刷新后重试",
     ACCOUNT_NOT_FOUND: "没有找到可用账户",
     RECIPIENT_NOT_FOUND: "没有找到该收款人，请核对手机号或姓名",
     RECIPIENT_AMBIGUOUS: "存在同名客户，请使用手机号转账",

@@ -43,11 +43,6 @@
 .quickActions button span { width: 58px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: #f0f3ed; transition: transform .18s, background .18s; }
 .quickActions svg { width: 20px; }
 .quickActions button:active span { transform: scale(.95); background: #eaeae7; }
-.agentCallout { width: 100%; border: 0; border-radius: 19px; padding: 17px; background: var(--accent-soft); color: var(--ink); display: grid; grid-template-columns: 42px 1fr 20px; align-items: center; gap: 12px; text-align: left; cursor: pointer; }
-.agentCallout > span:nth-child(2) { display: flex; flex-direction: column; gap: 3px; }
-.agentCallout b { font-size: 16px; letter-spacing: -.02em; }
-.agentCallout small { color: #526346; font-size: 13px; }
-.agentMark { width: 40px; height: 40px; display: grid; place-items: center; background: var(--ink); color: white; border-radius: 13px; }
 .section { margin-top: 22px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
 .sectionHead, .sectionTitle { display: flex; align-items: flex-start; justify-content: space-between; }
 .sectionHead p, .viewHeading p { font-size: 14px; color: var(--muted); margin-bottom: 5px; }
