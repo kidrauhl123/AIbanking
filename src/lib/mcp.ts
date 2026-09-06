@@ -180,7 +180,7 @@ export function createBankingMcpServer(principal: AuthPrincipal, origin: string)
 }
 
 export async function handleMcpRequest(request: Request, principal: AuthPrincipal) {
-  const server = createBankingMcpServer(principal, new URL(request.url).origin);
+  const server = createBankingMcpServer(principal, process.env.BANKPILOT_PUBLIC_URL || new URL(request.url).origin);
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);
   return transport.handleRequest(request);

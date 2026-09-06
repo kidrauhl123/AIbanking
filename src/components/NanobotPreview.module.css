@@ -1,0 +1,33 @@
+.preview { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 20px 14px; }
+.heading h1 { font-size: 25px; letter-spacing: -.04em; line-height: 1.2; }
+.heading h1 span { display: inline-block; vertical-align: middle; margin-left: 5px; color: var(--accent); background: var(--accent-soft); font-size: 12px; letter-spacing: 0; padding: 4px 7px; border-radius: 7px; font-weight: 600; }
+.heading p, .note { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.heading button { border: 0; background: none; color: var(--muted); font-size: 13px; cursor: pointer; padding: 8px 0; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 20px 24px; scrollbar-width: none; }
+.intro { padding: 28px 0; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; }
+.intro h2 { font-size: 28px; letter-spacing: -.045em; line-height: 1.2; }
+.intro p { color: var(--muted); font-size: 15px; line-height: 1.65; }
+.consent { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.consent input { margin-top: 4px; accent-color: var(--accent); flex-shrink: 0; width: 18px; height: 18px; }
+.password { width: 100%; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.password input, .composer input { width: 100%; height: 50px; border: 1px solid var(--line); background: var(--paper); border-radius: 13px; padding: 0 13px; font-size: 16px; min-width: 0; }
+.password input::placeholder { font-size: 13px; }
+.primary { width: 100%; min-height: 50px; border: 0; border-radius: 13px; background: var(--ink); color: white; cursor: pointer; }
+.preview button:disabled { opacity: .45; cursor: default; }
+.prompts { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.prompts button { text-align: left; border: 1px solid var(--line); background: white; border-radius: 13px; padding: 14px; font-size: 15px; cursor: pointer; }
+.messages { display: flex; flex-direction: column; gap: 28px; }
+.messages article { display: flex; flex-direction: column; align-items: stretch; gap: 18px; }
+.user { max-width: 90%; align-self: flex-end; background: var(--ink); color: white; padding: 12px 16px; border-radius: 18px 18px 5px 18px; font-size: 16px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.answer > p { font-size: 16px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.events { margin-bottom: 12px; color: var(--muted); font-size: 13px; }
+.events summary { cursor: pointer; padding: 4px 0; }.events > div { margin-top: 6px; }
+.bankResult { margin-top: 16px; padding: 15px; border: 1px solid var(--line); border-radius: 15px; display: grid; grid-template-columns: 20px 1fr; gap: 10px; }
+.bankResult > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bankResult b { font-size: 15px; }.bankResult small { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }.bankResult span { font-size: 14px; }
+.bankResult button { grid-column: 1 / -1; min-height: 44px; border: 0; border-radius: 10px; color: white; background: var(--ink); cursor: pointer; }
+.composer { flex-shrink: 0; display: grid; grid-template-columns: minmax(0,1fr) 46px; gap: 9px; padding: 10px 16px; border-top: 1px solid var(--line); }
+.composer button { border: 0; border-radius: 13px; background: var(--ink); color: white; display: grid; place-items: center; cursor: pointer; }
+.error { margin: 0 16px 10px; padding: 12px; border-radius: 12px; background: #fff1ef; color: #8e312c; font-size: 14px; }
+.error button { display: inline-flex; align-items: center; gap: 5px; border: 0; background: none; margin-left: 8px; color: inherit; cursor: pointer; }

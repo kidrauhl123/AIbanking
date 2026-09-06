@@ -33,7 +33,8 @@ BankPilot 是为“银行 AI 智能体”赛题构建的可运行 PWA 沙箱银�
 下一阶段正在验证“原版 Nanobot + 银行 MCP + Skill”，优先复用现成 Agent，
 业务权限仍由银行内核执行。已有[可运行集成与评测脚本](integrations/nanobot/README.md)，
 能力与缺口见 [Nanobot 评测报告](docs/NANOBOT_EVALUATION.md)。这是独立验证，
-尚未替换线上 LangGraph，也不代表多用户 IM 托管已完成。
+APP 现已提供独立的 Nanobot 体验入口，部署与边界见 [Nanobot 托管说明](docs/NANOBOT_HOSTING.md)。
+原版助手仍用 LangGraph；多用户 IM 托管尚未完成。
 
 ## 本地运行
 

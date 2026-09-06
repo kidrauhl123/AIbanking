@@ -6,8 +6,9 @@ loop, bank intent router, or Nanobot fork. `bank_agent.py` composes the upstream
 AgentLoop/SDK and public tool registry; `skills/bankpilot` supplies banking usage
 instructions. Bank authorization stays in Bank Core.
 
-This is an executable integration/evaluation pilot, **not a deployed multi-user
-IM product**. The existing PWA/LangGraph runtime has not been switched.
+The original CLI remains an executable integration/evaluation pilot, **not a
+multi-user IM product**. A separate [PWA preview supervisor](../../docs/NANOBOT_HOSTING.md)
+now uses this integration beside the existing LangGraph assistant.
 See the [measured results and remaining gaps](../../docs/NANOBOT_EVALUATION.md).
 
 ## Run one user

@@ -20,6 +20,7 @@ services:
       - ../db/migrations/003_agent_runtime_and_channels.sql:/docker-entrypoint-initdb.d/30-agent-runtime.sql:ro
       - ../db/migrations/004_langgraph_checkpoint_schema.sql:/docker-entrypoint-initdb.d/40-langgraph-checkpoints.sql:ro
       - ../db/migrations/005_qq_channel.sql:/docker-entrypoint-initdb.d/50-qq-channel.sql:ro
+      - ../db/migrations/007_nanobot_preview.sql:/docker-entrypoint-initdb.d/70-nanobot-preview.sql:ro
     networks:
       - internal
     mem_limit: 512m
@@ -47,6 +48,9 @@ services:
       AI_MODEL: ${AI_MODEL:-}
       AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-30000}
       BANKPILOT_PUBLIC_URL: ${BANKPILOT_PUBLIC_URL}
+      NANOBOT_SERVICE_URL: http://nanobot:8080
+      NANOBOT_SERVICE_TOKEN: ${NANOBOT_SERVICE_TOKEN:-}
+      NANOBOT_ALLOWED_USERS: ${NANOBOT_ALLOWED_USERS:-}
       WECOM_ADAPTER_TOKEN: ${WECOM_ADAPTER_TOKEN:-}
       QQ_ADAPTER_TOKEN: ${QQ_ADAPTER_TOKEN:-}
       QQ_BOT_ENTRY_URL: ${QQ_BOT_ENTRY_URL:-}
@@ -70,6 +74,42 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+
+  nanobot:
+    profiles: ["nanobot"]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.nanobot
+    image: bankpilot-nanobot:latest
+    container_name: bankpilot-nanobot
+    restart: unless-stopped
+    environment:
+      AI_BASE_URL: ${AI_BASE_URL}
+      AI_API_KEY: ${AI_API_KEY}
+      AI_MODEL: ${AI_MODEL}
+      BANKPILOT_MCP_URL: ${BANKPILOT_PUBLIC_URL}/api/mcp
+      BANKPILOT_CALLBACK_URL: http://app:3000/api/internal/nanobot/result
+      NANOBOT_SERVICE_TOKEN: ${NANOBOT_SERVICE_TOKEN}
+      NANOBOT_DATA_DIR: /data
+    volumes:
+      - bankpilot_nanobot:/data
+    networks:
+      - internal
+      - nanobot_egress
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /home/bankagent:size=16m,uid=10001,gid=10001,mode=700
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 96
+    mem_limit: 768m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   wecom:
     profiles: ["wecom"]
@@ -116,10 +156,13 @@ services:
     cpus: 0.5
 
 volumes:
+  bankpilot_nanobot:
+    name: bankpilot_nanobot
   bankpilot_postgres:
     name: bankpilot_postgres
 
 networks:
+  nanobot_egress:
   internal:
     name: bankpilot_internal
     internal: true

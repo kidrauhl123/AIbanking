@@ -9,6 +9,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ServiceWorkerRegister } from "./ServiceWorkerRegister";
 import { AuthScreen } from "./AuthScreen";
+import { NanobotPreview } from "./NanobotPreview";
 import type { BankStatement } from "@/lib/banking-report";
 import styles from "./BankingApp.module.css";
 
@@ -39,6 +40,7 @@ type PreparedTransfer = {
 export function BankingApp() {
   const [data, setData] = useState<Bootstrap | null>(null);
   const [tab, setTab] = useState<Tab>("home");
+  const [agentMode, setAgentMode] = useState<"original" | "nanobot">("original");
   const [loading, setLoading] = useState(true);
   const [authRequired, setAuthRequired] = useState(false);
   const [error, setError] = useState("");
@@ -135,7 +137,13 @@ export function BankingApp() {
   if (loading && !data && !authRequired) return <main className={styles.stage}><div className={styles.splash}><span>B</span><p>正在连接银行核心</p></div></main>;
   if (authRequired) return <AuthScreen onAuthenticated={load} />;
 
-  const logout = async () => { await fetch("/api/auth/logout", { method: "POST" }); setData(null); setAuthRequired(true); };
+  const logout = async () => { await fetch("/api/auth/logout", { method: "POST" }); setData(null); setChats([]); conversationId.current = ""; setAgentMode("original"); setAuthRequired(true); };
+  const openNanobotOperation = async (id: string) => {
+    const response = await fetch(`/api/v1/operations/${encodeURIComponent(id)}`);
+    const result = await response.json();
+    if (!response.ok || result.status !== "AWAITING_AUTH") throw new Error("操作当前不可授权，请刷新状态");
+    setPrepared(result); setDialog("transfer");
+  };
   const closeTransfer = () => { setDialog(null); setPrepared(null); setMfaCode(""); if (location.search) history.replaceState(null, "", location.pathname); };
 
   return <main className={styles.stage}>
@@ -147,13 +155,15 @@ export function BankingApp() {
         <button className={styles.iconButton} aria-label="通知"><Bell size={20} strokeWidth={1.8} /><i /></button>
       </header>
       {error && <div className={styles.connectionError}><span>{error}</span><button onClick={load}><RefreshCw size={15} />重试</button></div>}
-      <div className={styles.viewport} ref={viewportRef}>
+      {tab === "agent" && <div className={styles.agentSwitch} aria-label="选择 AI 助手"><button aria-pressed={agentMode === "original"} onClick={() => setAgentMode("original")}>原版助手</button><button aria-pressed={agentMode === "nanobot"} onClick={() => setAgentMode("nanobot")}>Nanobot 体验版</button></div>}
+      <div className={`${styles.viewport} ${tab === "agent" && agentMode === "nanobot" ? styles.nanobotViewport : ""}`} ref={viewportRef}>
         {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} onOpenAgent={() => setTab("agent")} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
-        {tab === "agent" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} onCancel={cancelAgentOperation} bottomRef={bottomRef} />}
+        {tab === "agent" && agentMode === "nanobot" && <NanobotPreview onAuthorize={openNanobotOperation} />}
+        {tab === "agent" && agentMode === "original" && <AgentView chats={chats} sending={sending} coreConnected={!error} aiStatus={data?.ai ?? { configured: false, model: null }} onPrompt={send} onCommit={commit} onCancel={cancelAgentOperation} bottomRef={bottomRef} />}
         {tab === "activity" && <ActivityView data={data} />}
         {tab === "cards" && <CardsView data={data} onCreate={() => setDialog("card")} onLocked={load} />}
       </div>
-      {tab === "agent" && <form className={styles.composer} onSubmit={onSubmit}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="说出你想办理的业务…" aria-label="向银行 Agent 发送消息" /><button type="submit" disabled={!input.trim() || sending} aria-label="发送"><Send size={18} /></button></form>}
+      {tab === "agent" && agentMode === "original" && <form className={styles.composer} onSubmit={onSubmit}><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="说出你想办理的业务…" aria-label="向银行 Agent 发送消息" /><button type="submit" disabled={!input.trim() || sending} aria-label="发送"><Send size={18} /></button></form>}
       <nav className={styles.nav} aria-label="主导航">
         <NavButton active={tab === "home"} label="首页" icon={<House size={21} />} onClick={() => setTab("home")} />
         <NavButton active={tab === "agent"} label="AI 助手" icon={<Sparkles size={21} />} onClick={() => setTab("agent")} />
