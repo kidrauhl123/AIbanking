@@ -33,7 +33,14 @@ Next.js App Router + React。支持注册、登录、账户、流水、入金、
 PWA 另提供独立 Nanobot 模式，通过私有 Python supervisor 启动原版 Nanobot 子进程，
 不经过 LangGraph 意图路由。`nanobot_consents` 保存用户授权，`nanobot_runs` 保存幂等
 运行与公开对话；每次运行签发短时 MCP 令牌并关联银行工具审计。授权执行仍回银行 APP。
-此模式向所有已登录用户开放，不代表已有生产级每租户容器或 IM 托管，详见 [托管边界](NANOBOT_HOSTING.md)。
+此模式向所有已登录用户开放，详见 [托管边界](NANOBOT_HOSTING.md)。
+
+### Nanobot 个人 IM（当前接入页）
+
+`/channels` 接入微信扫码和用户自己的 QQ/企微机器人。私有 supervisor 维护每连接
+独立的常驻渠道进程，复用 Nanobot 原生插件；银行负责登录、一次性配对、身份校验和
+短时 MCP 授权。消息进入同一 Nanobot 银行执行入口，不走下面的旧 LangGraph Worker。
+凭据/微信状态加密持久化，群聊和附件在入口拒绝。详见 [IM 设计与限制](NANOBOT_IM.md)。
 
 ### 腾讯消息 Channel Adapters（原版助手）
 
@@ -65,6 +72,7 @@ MCP 使用官方 TypeScript SDK 的 Streamable HTTP transport。每次请求按�
 - Agent：`agent_tasks`、`task_nodes`、`policy_decisions`
 - Agent Runtime：`agent_threads`、`agent_runtime_runs`、`langgraph.*`
 - 渠道：`channel_identities`、`channel_binding_tokens`、`channel_events`、`channel_outbox`
+- Nanobot：`nanobot_consents`、`nanobot_runs`、`nanobot_channels`、`nanobot_channel_messages`
 - 外部接入：`api_clients`、`api_tokens`、`mcp_invocations`
 - 审计：`audit_events`
 

@@ -1,2 +1,9 @@
 # Use the published runtime unchanged. Pin transitive dependencies in requirements.txt.
 nanobot-ai==0.3.0
+# Upstream channel manifests; installed at build time, never by a remote user.
+aiohttp>=3.9.0,<4.0.0
+qq-botpy>=1.2.0,<2.0.0
+wecom-aibot-sdk-python>=0.1.5
+qrcode[pil]>=8.0
+pycryptodome>=3.20.0
+cryptography>=46.0.0

@@ -10,6 +10,7 @@ import hmac
 import json
 import os
 import sys
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from uuid import UUID
 
@@ -159,6 +160,39 @@ async def health(request: Request):
     return JSONResponse({"ok": configured}, status_code=200 if configured else 503)
 
 
+async def channels(request: Request):
+    if not authorized(request.headers.get("authorization")):
+        return JSONResponse({"error": "UNAUTHORIZED"}, status_code=401)
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > 10000:
+            return JSONResponse({"error": "TOO_LARGE"}, status_code=413)
+    try:
+        return JSONResponse(await request.app.state.channels.action(json.loads(body)))
+    except (ValueError, KeyError, TypeError):
+        return JSONResponse({"error": "INVALID_CHANNEL_ACTION"}, status_code=400)
+    except Exception as error:
+        code = "CHANNEL_CAPACITY" if str(error) == "CHANNEL_CAPACITY" else "CHANNEL_ACTION_FAILED"
+        return JSONResponse({"error": code}, status_code=503)
+
+
+@asynccontextmanager
+async def lifespan(app):
+    from channel_service import ChannelService
+    app.state.channels = ChannelService()
+    reconcile = asyncio.create_task(app.state.channels.reconcile())
+    try:
+        yield
+    finally:
+        reconcile.cancel()
+        with suppress(asyncio.CancelledError):
+            await reconcile
+        await app.state.channels.close()
+
+
 app = Starlette(
-    routes=[Route("/runs", start, methods=["POST"]), Route("/health", health)]
+    lifespan=lifespan,
+    routes=[Route("/runs", start, methods=["POST"]), Route("/health", health),
+            Route("/channels", channels, methods=["POST"])],
 )

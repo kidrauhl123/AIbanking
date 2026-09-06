@@ -63,10 +63,14 @@ export async function finishPreviewRun(runId: string, message: string, failed: b
   });
 }
 
-export async function startPreviewRun(customerId: string, input: { requestId: string; conversationId: string; message: string }) {
+export async function startPreviewRun(customerId: string, input: { requestId: string; conversationId: string; message: string; channelId?: string }) {
   await expireRuns(customerId);
   const job = await withTransaction(async client => {
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,7))", [customerId]);
+    if (input.channelId) {
+      const channel = await client.query("SELECT id FROM nanobot_channels WHERE id=$1 AND customer_id=$2 AND enabled AND sender_hash IS NOT NULL FOR UPDATE", [input.channelId, customerId]);
+      if (!channel.rowCount || input.channelId !== input.conversationId) throw new AuthError("NANOBOT_CONSENT_REQUIRED", 403);
+    }
     const consent = await client.query<{ id: string }>("SELECT id FROM nanobot_consents WHERE customer_id=$1 AND revoked_at IS NULL AND expires_at>now()", [customerId]);
     if (!consent.rows[0]) throw new AuthError("NANOBOT_CONSENT_REQUIRED", 403);
     const previous = await client.query("SELECT id FROM nanobot_runs WHERE id=$1 AND customer_id=$2", [input.requestId, customerId]);

@@ -57,10 +57,9 @@ MCP credentials or workspace-wide memory. The pilot tests two separate runtime
 instances with the same session name and different workspaces/tokens. This is
 functional isolation testing, not an OS/container escape security audit.
 
-For hosted IM, a trusted service still needs sender verification, tenant-bound
-credentials, process/container isolation, limits, lifecycle/revocation, and a
-consent flow. These are explicit follow-up tasks; no fake “connected” state is
-introduced by this pilot.
+Hosted IM now reuses the upstream channel plugins in per-connection processes.
+See [IM architecture, setup and limitations](../../docs/NANOBOT_IM.md).
+The standalone pilot below and actual hosted-channel delivery are separate tests.
 
 ## Tests and evaluation
 

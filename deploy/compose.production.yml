@@ -21,6 +21,7 @@ services:
       - ../db/migrations/004_langgraph_checkpoint_schema.sql:/docker-entrypoint-initdb.d/40-langgraph-checkpoints.sql:ro
       - ../db/migrations/005_qq_channel.sql:/docker-entrypoint-initdb.d/50-qq-channel.sql:ro
       - ../db/migrations/007_nanobot_preview.sql:/docker-entrypoint-initdb.d/70-nanobot-preview.sql:ro
+      - ../db/migrations/008_nanobot_channels.sql:/docker-entrypoint-initdb.d/80-nanobot-channels.sql:ro
     networks:
       - internal
     mem_limit: 512m
