@@ -66,12 +66,12 @@ export function NanobotPreview({ onAuthorize }: { onAuthorize: (id: string) => P
     catch (err) { setError(err instanceof Error ? err.message : "发送状态未知，请重试同一请求。"); }
     finally { setBusy(false); }
   };
-  return <section className={styles.preview} aria-label="Nanobot 体验版">
-    <header className={styles.heading}><div><h1>Nanobot <span>体验版</span></h1><p>{state?.connected ? "你的账户，你的独立对话" : "让 Agent 帮你办银行业务"}</p></div>{state?.connected && <button disabled={busy} onClick={disconnect}>断开连接</button>}</header>
+  return <section className={styles.preview} aria-label="Nanobot">
+    <header className={styles.heading}><div><h1>Nanobot</h1><p>{state?.connected ? "你的账户，你的独立对话" : "让 Agent 帮你办银行业务"}</p></div>{state?.connected && <button disabled={busy} onClick={disconnect}>断开连接</button>}</header>
     {error && <div className={styles.error} role="alert">{error}<button onClick={() => pending ? void send(pending.message) : void refresh().then(() => setError("")).catch(() => setError("连接仍不可用，请稍后重试。"))} disabled={busy}><RefreshCw size={14} />重试</button></div>}
     <div className={styles.scroll} ref={scroll}>
       {!state && <p className={styles.note}>正在读取连接状态…</p>}
-      {state && !state.allowed && <div className={styles.intro}><ShieldCheck size={30} /><h2>定向体验</h2><p>这个账户尚未加入体验名单。原来的银行助手仍可正常使用。</p></div>}
+      {state && !state.allowed && <div className={styles.intro}><ShieldCheck size={30} /><h2>暂时无法连接</h2><p>Nanobot 服务尚未就绪，请稍后重试。原来的银行助手仍可使用。</p></div>}
       {state?.allowed && !state.connected && <form className={styles.intro} onSubmit={connect}><ShieldCheck size={30} /><h2>连接你的银行</h2><p>Nanobot 可查询账户、流水、卡片和订阅，也可以准备转账。付款仍需你在银行页面确认。</p><p>相关对话与查询结果会交给平台配置的 AI 模型处理，并保存对话和操作审计。可随时断开，授权最长 30 天。</p><label className={styles.consent}><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />同意以上数据使用及银行访问权限</label><label className={styles.password}>银行登录密码<input type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="仅用于银行端验证，不发送给 AI" required /></label><button className={styles.primary} disabled={!consent || !password || busy}>{busy ? "正在连接…" : "确认连接"}</button></form>}
       {state?.allowed && state.connected && <>
         {!runs.length && <div className={styles.intro}><h2>想先办点什么？</h2><p>查账、准备转账，或接着追问。工具不支持的事，暂时不能代办。</p><div className={styles.prompts}>{["查一下我的余额", "分析最近的收支", "查看我的卡片"].map(text => <button key={text} onClick={() => send(text)} disabled={busy || running}>{text}</button>)}</div></div>}

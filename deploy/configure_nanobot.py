@@ -2,17 +2,16 @@
 
 Run on the bank server against its existing private deployment environment.
 Existing model/database settings are preserved; the shared service credential
-is generated once. An omitted allow-list leaves enrollment unchanged/closed.
+is generated once. All authenticated bank users can connect; no enrollment list.
 """
 import argparse
 import os
-import re
 import secrets
 import tempfile
 from pathlib import Path
 
 
-def configure(path: Path, allowed: str | None):
+def configure(path: Path):
     if path.is_symlink() or not path.is_file():
         raise ValueError("Expected existing regular private environment file")
     source = path.read_text()
@@ -20,12 +19,6 @@ def configure(path: Path, allowed: str | None):
     updates = {}
     if not values.get("NANOBOT_SERVICE_TOKEN"):
         updates["NANOBOT_SERVICE_TOKEN"] = secrets.token_urlsafe(48)
-    if allowed is not None:
-        if any(not re.fullmatch(r"(?:1\d{10}|[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})", item) for item in allowed.split(",") if item):
-            raise ValueError("Allow-list must contain exact phones or customer UUIDs")
-        updates["NANOBOT_ALLOWED_USERS"] = allowed
-    elif "NANOBOT_ALLOWED_USERS" not in values:
-        updates["NANOBOT_ALLOWED_USERS"] = ""
     if not updates:
         print("Nanobot private settings already initialized.")
         return
@@ -47,6 +40,5 @@ def configure(path: Path, allowed: str | None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", type=Path, required=True)
-    parser.add_argument("--allow-users", help="Comma-separated exact customer IDs/phones; empty closes enrollment")
     args = parser.parse_args()
-    configure(args.env_file, args.allow_users)
+    configure(args.env_file)

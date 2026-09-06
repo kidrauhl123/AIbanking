@@ -1,7 +1,7 @@
 """LOCAL hosted-path regression; synthetic fixtures only. Never production.
 
-Start the bank on 127.0.0.1:3012 with NANOBOT_ALLOWED_USERS=19900006001,19900006002
-and the local test service token documented below. Real model settings use the
+Start the bank on 127.0.0.1:3012 with the local test service token documented
+below. No enrollment list is needed. Real model settings use the
 same explicit environment/authorized SSH mechanism as evaluate.py.
 """
 

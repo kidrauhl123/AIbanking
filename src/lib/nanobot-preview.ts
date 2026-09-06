@@ -11,15 +11,14 @@ export function validServiceToken(value: string | null) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function previewAllowed(customerId: string) {
-  const entries = (process.env.NANOBOT_ALLOWED_USERS ?? "").split(",").map(s => s.trim()).filter(Boolean);
-  if (!entries.length || !process.env.NANOBOT_SERVICE_URL || !process.env.NANOBOT_SERVICE_TOKEN) return false;
-  const result = await query("SELECT 1 FROM customers WHERE id=$1 AND (id::text=ANY($2::text[]) OR phone=ANY($2::text[]))", [customerId, entries]);
-  return result.rowCount === 1;
+export function nanobotAvailable() {
+  // Availability is deployment-wide. Account authentication remains in the API;
+  // no enrollment list or client-provided customer identity is consulted.
+  return Boolean(process.env.NANOBOT_SERVICE_URL && (process.env.NANOBOT_SERVICE_TOKEN?.length ?? 0) >= 32);
 }
 
-export async function requirePreview(customerId: string) {
-  if (!(await previewAllowed(customerId))) throw new AuthError("NANOBOT_PREVIEW_NOT_ENABLED", 403);
+export function requireNanobot() {
+  if (!nanobotAvailable()) throw new AuthError("NANOBOT_UNAVAILABLE", 503);
 }
 
 export async function expireRuns(customerId: string) {

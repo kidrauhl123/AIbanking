@@ -1,17 +1,17 @@
 import { z } from "zod";
 import { authenticateRequest, AuthError, verifyCustomerPassword } from "@/lib/auth";
 import { assertSameOrigin } from "@/lib/http";
-import { connectPreview, disconnectPreview, limitConsentAttempts, previewAllowed, previewState, requirePreview, startPreviewRun } from "@/lib/nanobot-preview";
+import { connectPreview, disconnectPreview, limitConsentAttempts, nanobotAvailable, previewState, requireNanobot, startPreviewRun } from "@/lib/nanobot-preview";
 
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("connect"), password: z.string().min(1).max(128), confirmed: z.literal(true) }),
   z.object({ action: z.literal("send"), requestId: z.string().uuid(), conversationId: z.string().uuid(), message: z.string().trim().min(1).max(2000) }),
 ]);
 const messages: Record<string, string> = {
-  NANOBOT_PREVIEW_NOT_ENABLED: "此账户暂未加入 Nanobot 体验名单。",
+  NANOBOT_UNAVAILABLE: "Nanobot 服务暂不可用，请稍后重试。",
   NANOBOT_CONSENT_REQUIRED: "请先确认连接你的银行账户。",
   NANOBOT_BUSY: "上一条消息还在处理中，请稍候。",
-  NANOBOT_DAILY_LIMIT: "今日体验次数已用完，请明天再试。",
+  NANOBOT_DAILY_LIMIT: "今日调用次数已用完，请明天再试。",
   NANOBOT_CONNECT_LIMIT: "连接验证过于频繁，请 15 分钟后再试。",
   AUTH_INVALID: "银行密码不正确。",
 };
@@ -29,13 +29,13 @@ async function session(request: Request) {
 export async function GET(request: Request) {
   try {
     const id = await session(request);
-    const allowed = await previewAllowed(id);
+    const allowed = nanobotAvailable();
     return Response.json({ allowed, ...(await previewState(id)) }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return errorResponse(error); }
 }
 export async function POST(request: Request) {
   try {
-    const id = await session(request); await requirePreview(id);
+    const id = await session(request); requireNanobot();
     const input = schema.parse(await request.json());
     if (input.action === "connect") {
       await limitConsentAttempts(id);

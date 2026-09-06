@@ -155,7 +155,7 @@ export function BankingApp() {
         <button className={styles.iconButton} aria-label="通知"><Bell size={20} strokeWidth={1.8} /><i /></button>
       </header>
       {error && <div className={styles.connectionError}><span>{error}</span><button onClick={load}><RefreshCw size={15} />重试</button></div>}
-      {tab === "agent" && <div className={styles.agentSwitch} aria-label="选择 AI 助手"><button aria-pressed={agentMode === "original"} onClick={() => setAgentMode("original")}>原版助手</button><button aria-pressed={agentMode === "nanobot"} onClick={() => setAgentMode("nanobot")}>Nanobot 体验版</button></div>}
+      {tab === "agent" && <div className={styles.agentSwitch} aria-label="选择 AI 助手"><button aria-pressed={agentMode === "original"} onClick={() => setAgentMode("original")}>原版助手</button><button aria-pressed={agentMode === "nanobot"} onClick={() => setAgentMode("nanobot")}>Nanobot</button></div>}
       <div className={`${styles.viewport} ${tab === "agent" && agentMode === "nanobot" ? styles.nanobotViewport : ""}`} ref={viewportRef}>
         {tab === "home" && <HomeView data={data} loading={loading} visible={balanceVisible} toggleVisible={() => setBalanceVisible(!balanceVisible)} onOpenAgent={() => setTab("agent")} onDeposit={() => setDialog("deposit")} onTransfer={() => setDialog("transfer")} />}
         {tab === "agent" && agentMode === "nanobot" && <NanobotPreview onAuthorize={openNanobotOperation} />}

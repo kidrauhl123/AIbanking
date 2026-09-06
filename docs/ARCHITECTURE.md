@@ -28,12 +28,12 @@ Next.js App Router + React。支持注册、登录、账户、流水、入金、
 
 模型采用两次受约束调用：第一次输出通过 Zod 校验的意图、实体和步骤；银行工具返回事实后，第二次只能根据 `BANK_FACTS` 生成说明。模型不能生成 SQL、调用任意 URL 或直接提交账本。重复授权由 runtime 原子抢占，只有一个请求能从 `INTERRUPTED` 进入 `RUNNING`。
 
-### Nanobot APP 体验入口
+### Nanobot APP 入口
 
 PWA 另提供独立 Nanobot 模式，通过私有 Python supervisor 启动原版 Nanobot 子进程，
 不经过 LangGraph 意图路由。`nanobot_consents` 保存用户授权，`nanobot_runs` 保存幂等
 运行与公开对话；每次运行签发短时 MCP 令牌并关联银行工具审计。授权执行仍回银行 APP。
-此模式是定向体验，不代表已有生产级每租户容器或 IM 托管，详见 [托管边界](NANOBOT_HOSTING.md)。
+此模式向所有已登录用户开放，不代表已有生产级每租户容器或 IM 托管，详见 [托管边界](NANOBOT_HOSTING.md)。
 
 ### 腾讯消息 Channel Adapters（原版助手）
 
